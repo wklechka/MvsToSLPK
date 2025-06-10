@@ -16,6 +16,9 @@
 # Mono auto generated files
 mono_crash.*
 
+# 3rd party
+third_party/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
