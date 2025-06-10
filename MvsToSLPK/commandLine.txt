@@ -1,0 +1,22 @@
+
+Environment Debug
+PATH=K:\baseline\Packages\Mesh\VTK\Buildv17\bin\Debug;K:\baseline\Packages\Mesh\i3s\Buildv17\Debug;D:\Baseline2022\dlls\Debug;$(userprofile)\DAT_Pack\x64\2017Build\Debug;%PATH%
+
+Command Line
+-s "G:\Customer Stuff\Icaros\test28\test28\Results\Summit\test28_StereoModels.smtxml" -w "G:\Customer Stuff\Icaros\Colmap5\BatchTest" -p "G:\Customer Stuff\Icaros\test28\test28\Working\DensePointCloud\mvs_test28_1_1\mvs_test8_1_1_dense.ply.prj" -r "G:\Customer Stuff\Icaros\Colmap5\BatchTest\results" -g 3
+
+
+Release
+PATH=K:\baseline\Packages\Mesh\VTK\Buildv17\bin\Release;K:\baseline\Packages\Mesh\i3s\Buildv17\Release;D:\Baseline2022\dlls\Release;$(userprofile)\DAT_Pack\x64\2017Build\Release;%PATH%
+
+-s "G:\Customer Stuff\Icaros\test28\test28\Results\Summit\test28_StereoModels.smtxml" -w "G:\Customer Stuff\Icaros\Colmap5\BatchTest" -p "G:\Customer Stuff\Icaros\test28\test28\Working\DensePointCloud\mvs_test28_1_1\mvs_test8_1_1_dense.ply.prj" -r "G:\Customer Stuff\Icaros\Colmap5\BatchTest\results" -g 3
+
+
+-s "K:\CustomerStuff\ImageIQ\Samp2\Samp2\Results\Summit\Samp2_StereoModels.smtxml" -w "K:\CustomerStuff\ImageIQ\Samp2\Samp2\MESH\working" -r "K:\CustomerStuff\ImageIQ\Samp2\Samp2\MESH\results" -g 3 -p "K:\CustomerStuff\ImageIQ\Samp2\Samp2\Results\DTM\Samp2_1_1_tif.las.prj"
+
+
+-s "K:\CustomerStuff\ImageIQ\ImpossSmall\ImpossSmall\Results\Summit\ImpossSmall_StereoModels.smtxml" -w "K:\CustomerStuff\ImageIQ\ImpossSmall\ImpossSmall\MESH\working" -r "K:\CustomerStuff\ImageIQ\ImpossSmall\ImpossSmall\MESH\results" -g 3 -p "K:\CustomerStuff\ImageIQ\ImpossSmall\ImpossSmall\Results\DTM\ImpossSmall_1_1_tif.las.prj"
+
+-s "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\Summit\ImpossFull_StereoModels.smtxml" -w "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH\working" -r "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH\results" -g 3 -p "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\DTM\ImpossFull_1_1_tif.las.prj" -m 500
+
+-s "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\Summit\ImpossFull_StereoModels_IOCorrection\ImpossFull_StereoModels.smtxml" -w "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH_IO\working" -r "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH_IO\results" -g 3  -p "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\DTM\ImpossFull_1_1_tif.las.prj" -m 500

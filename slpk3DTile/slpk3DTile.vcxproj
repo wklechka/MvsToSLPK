@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{59455430-aeb5-4416-85d1-ad70e893bf60}</ProjectGuid>
+    <RootNamespace>slpk3DTile</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;SLPK3DTILE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;SLPK3DTILE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;NOMINMAX;SLPK_BUILD_AS_DLL;_DEBUG;SLPK3DTILE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>..\;..\third_party\Mesh\OpenMesh\src;..\..\..\src\AI;..\..\..\src;..\third_party\gdal.3.9\ogr;..\third_party\gdal.3.9\gcore;..\third_party\gdal.3.9\frmts\gtiff;..\third_party\gdal.3.9\Buildv17\port;..\third_party\gdal.3.9\port;..\third_party\gdal.3.9\Buildv17\gcore;..\third_party\Mesh\vcg;..\third_party\Mesh\vcg\eigenlibBOGUS;..\third_party\Mesh\SeamAwareDecimate;..\third_party\Mesh\SeamAwareDecimate\ext\libigl\include;..\third_party\Mesh\SeamAwareDecimate\ext\eigenlib;..\third_party\Mesh\i3s\src;..\third_party\Mesh\i3s\include;..\third_party\Mesh\VTK\Install\include\vtk-9.3;..\third_party\Mesh\VTK\Buildv17\ThirdParty\libproj\vtklibproj\src;..\third_party\Mesh\VTK\ThirdParty\libproj\vtklibproj\src;..\third_party\Mesh\RectangleBinPack;..\third_party\Mesh;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>..\third_party\Mesh\OpenMesh\Buildv17\src\OpenMesh;..\third_party\gdal.3.9\Buildv17\Debug;..\third_party\Mesh\i3s\Buildv17\Debug;..\third_party\Mesh\VTK\Buildv17\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Core\Debug\OpenMeshCored.lib;Tools\Debug\OpenMeshToolsd.lib;gdal.3.9d.lib;i3s.lib;..\third_party\Mesh\SeamAwareDecimate\Buildv17\DEC_LIBS.dir\Debug\DEC_LIBS.lib;vtkCommonCore-9.3d.lib;vtkCommonDataModel-9.3d.lib;vtkFiltersCore-9.3d.lib;vtkIOPLY-9.3d.lib;vtkpng-9.3d.lib;vtkIOGeometry-9.3d.lib;vtkCommonMath-9.3d.lib;vtkCommonExecutionModel-9.3d.lib;vtksys-9.3d.lib;vtkIOCesium3DTiles-9.3d.lib;vtkIOCore-9.3d.lib;vtkCommonTransforms-9.3d.lib;vtkFiltersGeneral-9.3d.lib;vtklibproj-9.3d.lib;vtkIOImage-9.3d.lib;vtkImagingCore-9.3d.lib;..\third_party\Mesh\RectangleBinPack\Buildv17\Debug\RectangleBinPack.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;NOMINMAX;SLPK_BUILD_AS_DLL;NDEBUG;SLPK3DTILE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>..\;..\third_party\Mesh\OpenMesh\src;..\..\..\src\AI;..\..\..\src;..\third_party\gdal.3.9\ogr;..\third_party\gdal.3.9\gcore;..\third_party\gdal.3.9\frmts\gtiff;..\third_party\gdal.3.9\Buildv17\port;..\third_party\gdal.3.9\port;..\third_party\gdal.3.9\Buildv17\gcore;..\third_party\Mesh\vcg;..\third_party\Mesh\vcg\eigenlibBOGUS;..\third_party\Mesh\SeamAwareDecimate;..\third_party\Mesh\SeamAwareDecimate\ext\libigl\include;..\third_party\Mesh\SeamAwareDecimate\ext\eigenlib;..\third_party\Mesh\i3s\src;..\third_party\Mesh\i3s\include;..\third_party\Mesh\VTK\Install\include\vtk-9.3;..\third_party\Mesh\VTK\Buildv17\ThirdParty\libproj\vtklibproj\src;..\third_party\Mesh\VTK\ThirdParty\libproj\vtklibproj\src;..\third_party\Mesh\RectangleBinPack;..\third_party\Mesh;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>Full</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>..\third_party\Mesh\OpenMesh\Buildv17\src\OpenMesh;..\third_party\gdal.3.9\Buildv17\Release;..\third_party\Mesh\i3s\Buildv17\Release;..\third_party\Mesh\VTK\Install\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Core\Release\OpenMeshCore.lib;Tools\Release\OpenMeshTools.lib;gdal.3.9.lib;i3s.lib;..\third_party\Mesh\SeamAwareDecimate\Buildv17\DEC_LIBS.dir\Release\DEC_LIBS.lib;vtkCommonCore-9.3.lib;vtkCommonDataModel-9.3.lib;vtkFiltersCore-9.3.lib;vtkIOPLY-9.3.lib;vtkpng-9.3.lib;vtkIOGeometry-9.3.lib;vtkCommonMath-9.3.lib;vtkCommonExecutionModel-9.3.lib;vtksys-9.3.lib;vtkIOCesium3DTiles-9.3.lib;vtkIOCore-9.3.lib;vtkCommonTransforms-9.3.lib;vtkFiltersGeneral-9.3.lib;vtklibproj-9.3.lib;vtkIOImage-9.3.lib;vtkImagingCore-9.3.lib;..\third_party\Mesh\RectangleBinPack\Buildv17\Release\RectangleBinPack.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="CoordSys.h" />
+    <ClInclude Include="CreateLOD.h" />
+    <ClInclude Include="Decimator.h" />
+    <ClInclude Include="FolderNames.h" />
+    <ClInclude Include="framework.h" />
+    <ClInclude Include="Gen3DTiles.h" />
+    <ClInclude Include="GenSLPK.h" />
+    <ClInclude Include="MyOpenMesh.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="recursiveSplit.h" />
+    <ClInclude Include="slpk3DTiles.h" />
+    <ClInclude Include="SplitMesh.h" />
+    <ClInclude Include="SplitMeshHelper.h" />
+    <ClInclude Include="SplitName.h" />
+    <ClInclude Include="TexFunc.h" />
+    <ClInclude Include="UtilityFunc.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CoordSys.cpp" />
+    <ClCompile Include="CreateLOD.cpp" />
+    <ClCompile Include="Decimator.cpp">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Gen3DTiles.cpp" />
+    <ClCompile Include="GenSLPK.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="recursiveSplit.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="slpk3DTiles.cpp" />
+    <ClCompile Include="SplitMesh.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="TexFunc.cpp" />
+    <ClCompile Include="UtilityFunc.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StdUtil\StdUtil.vcxproj">
+      <Project>{a9993049-a800-4f50-890a-6dacedcf932e}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,16 @@
+0: J:\Dev3\FreeTheMesh\mvsToSlpkUI\x64\Debug\MvsToSLPK.exe
+1: -s
+2: K:\CustomerStuff\ImageIQ\Samp3\Samp3\Results\Mesh\working\Projects\Samp3_StereoModels_3.smtxml
+3: -p
+4: K:\CustomerStuff\ImageIQ\Samp3\Samp3\Results\DTM\Samp3_1_1_tif.las.prj
+5: -m
+6: 1000
+7: -w
+8: K:\CustomerStuff\ImageIQ\Samp3\Samp3\Results\Mesh\working\Proj_3
+9: -r
+10: K:\CustomerStuff\ImageIQ\Samp3\Samp3\Results\Mesh\Proj_3
+11: -g
+12: 3
+[2025-06-05 09:51:01.783] [multi_sink] [info] MvsToSLPK begin
+Number of CPU cores: 32
+Summit project not found: 
