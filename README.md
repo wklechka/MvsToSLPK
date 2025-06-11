@@ -40,3 +40,6 @@ Each directory has a license file.  Only the ones that touch other GPL code will
  - GPL : MvsToSLPK, slpk3DTile
  - MIT : ImageRW, PTFile, SmtPrj, StdUtil
 
+## ToDo
+Add sample project
+
