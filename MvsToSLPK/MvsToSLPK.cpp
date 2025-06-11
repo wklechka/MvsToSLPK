@@ -33,6 +33,321 @@
 #undef min
 #endif
 
+// forward declarations
+bool isColmapDone(MvsToSLPK_Options& opt);
+bool writeGeoInfo(MvsToSLPK_Options& opt, std::shared_ptr<iSMTPRJ>& smtPrj);
+bool runCOLMAP_fixedCameras(MvsToSLPK_Options& opt);
+bool runCOLMAP2(MvsToSLPK_Options& opt);
+bool runCOLMAP(MvsToSLPK_Options& opt, bool endAtSpase = false);
+bool colmapToScene(MvsToSLPK_Options& opt);
+bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp);
+void makeSplitFiles(MvsToSLPK_Options& opt, std::vector<std::vector<std::string>>& lodSplitfiles);
+bool generateSLPK(MvsToSLPK_Options& opt, std::vector<std::vector<std::string>>& lodSplitfiles, std::shared_ptr<iSMTPRJ>& smtPrj);
+
+// MAIN FUNCTION
+int main()
+{
+	std::cout << "MsvToSLPK:  Started" << std::endl;
+
+	int t1 = clock();
+
+	std::vector<std::string> argStdList;
+
+	LPWSTR* szArglist;
+	int nArgs;
+	int i;
+
+	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
+	if (NULL == szArglist)
+	{
+		wprintf(L"CommandLineToArgvW failed\n");
+		return 0;
+	}
+	else {
+		for (i = 0; i < nArgs; i++) {
+			std::wstring tmpStr = szArglist[i];
+			argStdList.push_back(StdUtility::convert(tmpStr));
+		}
+	}
+
+	bool colmapAlreadyRan = false;
+	enum class ProcessingType { FULL, COLMAP_ONLY, MVS_ONLY };
+	ProcessingType processType = ProcessingType::FULL;
+
+	MvsToSLPK_Options opt;
+
+	try {
+		TCLAP::CmdLine cmd("Command MvsToSLPK description message", ' ', "1.0");
+
+		// Define a value argument and add it to the command line.
+		// A value arg defines a flag and a type of value that it expects,
+		// such as "-n Bishop".
+		TCLAP::ValueArg<std::string> summitArg("s", "SummitProj", "Summit Project file", true, "", "string");
+		TCLAP::ValueArg<std::string> workFolderArg("w", "workFolder", "Working folder", true, "", "string");
+		TCLAP::ValueArg<std::string> resultsFolderArg("r", "resultsFolder", "Results folder", true, "", "string");
+		TCLAP::ValueArg<std::string> prjArg("p", "ProjectionFile", "Projection File", false, "", "string");
+		TCLAP::SwitchArg knownArg("k", "UseKnown", "Flag to use known camera poses. Or recalc if EXIF info", true);
+		TCLAP::ValueArg<int> maxSizeArg("m", "MaxImageSize", "Max image size used by undistort", false, 6000, "Integer Value");
+		TCLAP::ValueArg<int> generationTypeArg("g", "Generation", "1-sparse only, 2-dense only, 3-both", false, 3, "Integer Value");
+		TCLAP::ValueArg<int> processingArg("j", "Process", "0-full processing, 1-COLMAP only, 2-OpenMVS only", false, 0, "Integer Value");
+		TCLAP::ValueArg<int> allowMVS_split_Arg("a", "AllowMVSsplit", "0-No, 1-Yes", false, 0, "Integer Value");
+
+
+		cmd.add(summitArg);
+		cmd.add(workFolderArg);
+		cmd.add(resultsFolderArg);
+		cmd.add(prjArg);
+		cmd.add(knownArg);
+		cmd.add(maxSizeArg);
+		cmd.add(generationTypeArg);
+		cmd.add(processingArg);
+		cmd.add(allowMVS_split_Arg);
+
+		// Parse the argv array.
+		cmd.parse(argStdList);
+
+		opt.summitProject = summitArg.getValue();
+		opt.workingFolder = workFolderArg.getValue();
+		opt.resultsFolder = resultsFolderArg.getValue();
+		opt.prjFile = prjArg.getValue();
+		opt.alwaysUseKnownCameraPose = knownArg.getValue();
+		opt.distortMaxImageSize = maxSizeArg.getValue();
+		opt.allowMVS_split = allowMVS_split_Arg.getValue() == 1 ? true : false;
+
+		switch (generationTypeArg.getValue())
+		{
+		case 1:
+			opt.gType = MvsToSLPK_Options::GenerationType::SPARSE;
+			break;
+		case 2:
+			opt.gType = MvsToSLPK_Options::GenerationType::DENSE;
+			break;
+		case 3:
+			opt.gType = MvsToSLPK_Options::GenerationType::BOTH;
+			break;
+		default:
+			opt.gType = MvsToSLPK_Options::GenerationType::BOTH;
+			break;
+		}
+
+		switch (processingArg.getValue())
+		{
+		case 0:
+			processType = ProcessingType::FULL;
+			break;
+		case 1:
+			processType = ProcessingType::COLMAP_ONLY;
+			break;
+		case 2:
+			processType = ProcessingType::MVS_ONLY;
+			break;
+		default:
+			processType = ProcessingType::FULL;
+			break;
+		}
+
+		colmapAlreadyRan = isColmapDone(opt);
+
+		// make a param file
+		std::string paramFilename = opt.workingFolder;
+		StdUtility::appendSlash(paramFilename);
+		paramFilename += "param.txt";
+		std::ofstream outParam;
+		outParam.open(paramFilename);
+		if (outParam.is_open()) {
+			outParam << maxSizeArg.getValue() << std::endl;
+			outParam << summitArg.getValue() << std::endl;
+			outParam << workFolderArg.getValue() << std::endl;
+			outParam << resultsFolderArg.getValue() << std::endl;
+			outParam << prjArg.getValue() << std::endl;
+		}
+		outParam.close();
+	}
+	catch (TCLAP::ArgException& e)  // catch exceptions
+	{
+		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
+	}
+
+	//postProgress(0);
+	postProgress(1, "MsvToSLPK: Started");
+
+	StdUtility::createFullDirectoryPath(opt.workingFolder);
+	StdUtility::createFullDirectoryPath(opt.resultsFolder);
+
+	// set up a LOG file
+	std::string logFilename = opt.workingFolder;
+	StdUtility::appendSlash(logFilename);
+	logFilename += "logfile.txt";
+
+	// send cout to terminal and file
+	std::ofstream log_file(logFilename);
+	TeeBuf teeBuf(std::cout.rdbuf(), log_file.rdbuf());
+	std::streambuf* oldCoutBuf = std::cout.rdbuf(&teeBuf);
+
+	auto file_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log_file);
+	auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+	spdlog::logger logger("multi_sink", { file_sink, console_sink });
+	spdlog::set_default_logger(std::make_shared<spdlog::logger>(logger));
+
+
+	for (i = 0; i < nArgs; i++) {
+		std::string printStr = StdUtility::string_format("%d: %ws", i, szArglist[i]);
+		std::cout << printStr.c_str() << std::endl;
+	}
+
+	// find the EXEs or default to programmer environment
+	std::wstring thisEXEpath = WinUtility::executable_path();
+	std::wstring exeDir = StdUtility::getDirectory(thisEXEpath);
+	if (!opt.exes.setToPath(exeDir)) {
+		opt.exes.setToDeveloperLocations();
+	}
+
+	spdlog::info("MvsToSLPK begin");
+
+	opt.cpu_cores = std::thread::hardware_concurrency();
+	std::cout << "Number of CPU cores: " << opt.cpu_cores << std::endl;
+
+	// make sure folders exist
+	if (!StdUtility::fileExists(opt.summitProject)) {
+		std::cout << "Summit project not found: " << opt.summitProject.c_str() << std::endl;
+		return -1;
+	}
+
+	// must have GDAL and PROJ data set in ProgramData
+	std::wstring  programDataGDAL = WinUtility::common_APPDATA(L"MvsToSLPK\\GDAL");
+	if (!StdUtility::fileExists(programDataGDAL)) {
+		std::wcout << "GDAL folder not found: " << programDataGDAL.c_str() << std::endl;
+		std::wcout << "GDAL data must be stored here" << std::endl;
+		return -1;
+	}
+	else {
+		std::wcout << "GDAL data found at: " << programDataGDAL.c_str() << std::endl;
+	}
+
+	// write geo information file for COLMAP also write a BOX file of the Geo offset
+
+	// creates geo information (and box file) from Summit project 
+	std::cout << "Starting: writeGeoInfo" << std::endl;
+
+	auto smtPrj = std::shared_ptr<iSMTPRJ>(createISmtPrj(), [](iSMTPRJ* p) { p->Release(); });
+
+	if (!writeGeoInfo(opt, smtPrj)) {
+		// cant continue if this failed
+		spdlog::error("writeGeoInfo reported false.");
+		return -1;
+	}
+
+	if (processType == ProcessingType::FULL || processType == ProcessingType::COLMAP_ONLY) {
+		postProgress(5, "Starting COLMAP");
+
+
+		if (colmapAlreadyRan) {
+			// COLMAP has already been run
+			std::cout << "COLMAP previously ran, SKIPPING this step." << std::endl;
+		}
+		else
+		{
+			// COLMAP will make the sparse model and finish with undistorted dense folder
+
+			if (false && opt.fixedCameraParameters) {
+				//if (opt.fixedCameraParameters) {
+					// This is not working
+					// point_triangulator keeps modifying the camera
+					// we will go ahead and use mapper - even though it does another bundle adjustment
+					// and takes longer but the result we way better with the distortion in the camera
+				if (!runCOLMAP_fixedCameras(opt)) {
+					return -1;
+				}
+			}
+			else {
+				// COLMAP will make the sparse model and finish with undistorted dense folder
+				std::cout << "Starting: colmap" << std::endl;
+				if (!runCOLMAP(opt)) {
+					// cant continue if this failed
+					spdlog::error("runCOLMAP reported false.");
+					return -1;
+				}
+			}
+
+			colmapToScene(opt);
+		}
+	}
+
+	if (processType == ProcessingType::COLMAP_ONLY) {
+		postProgress(20, "COLMAP: Finished");
+		return 0;
+	}
+
+	if (processType == ProcessingType::FULL || processType == ProcessingType::MVS_ONLY) {
+
+		postProgress(20, "OpenMVS: Started");
+
+		if (opt.gType == MvsToSLPK_Options::GenerationType::SPARSE)
+		{
+			std::cout << "Sparse only selected.  Finished." << std::endl;
+			postProgress(100);
+			return 0;
+		}
+
+#if 1
+		// converts undistorted folder to MVS model and converts it dense
+		// dense is further processed to Mesh and finally a Textured Mesh.
+		// 
+	// 	std::cout << "Starting: MVS" << std::endl;
+	// 	if (!runOpenMvs(opt)) {
+	// 		// cant continue if this failed
+	// 		spdlog::error("runOpenMvs reported false.");
+	// 		return -1;
+	// 	}
+
+		std::cout << std::endl << "Starting: MVS - Multi" << std::endl;
+		if (!runOpenMvsWSplit(opt, opt.allowMVS_split)) {
+			//if (!runOpenMvsWSplit(opt, true)) {
+				// cant continue if this failed
+			spdlog::error("runOpenMvs reported false.");
+			return -1;
+		}
+#endif
+	}
+
+	// print out some information about the generated PLY...
+	printPLYresults(opt);
+
+	if (processType == ProcessingType::MVS_ONLY) {
+		postProgress(20, "OpenMVS: Finished");
+		return 0;
+	}
+
+	postProgress(80, "Make Split files");
+
+	if (opt.hasCoordSystem) {
+		// 3D Tiles and SLPK generation
+		std::vector<std::vector<std::string>> lodSplitfiles;
+		std::cout << "Starting: Split Files" << std::endl;
+		makeSplitFiles(opt, lodSplitfiles);
+
+		postProgress(85, "SLPK and 3D Tile generation");
+		std::cout << "Starting: SLPK and 3D Tile generation" << std::endl;
+		generateSLPK(opt, lodSplitfiles, smtPrj);
+	}
+
+	postProgress(95);
+
+
+	int t2 = clock();
+
+	std::cout << "Total time: " << float(t2 - t1) / CLOCKS_PER_SEC << " seconds" << std::endl;
+
+	spdlog::info("MvsToSLPK end");
+
+	postProgress(100);
+
+	// Restore the original stream buffer
+	std::cout.rdbuf(oldCoutBuf);
+
+	return 0;
+}
+
 
 // re writes the camera file
 // Undistort function does not properly change the camera if there was no distortion
@@ -540,7 +855,7 @@ static bool runCOLMAP2(MvsToSLPK_Options& opt)
 }
 
 
-static bool runCOLMAP(MvsToSLPK_Options& opt, bool endAtSpase = false)
+static bool runCOLMAP(MvsToSLPK_Options& opt, bool endAtSpase)
 {
 	//"%COLMAP_EXE%" feature_extractor --database_path "%OUT_PATH%\database.db" --image_path "%DATASET_PATH%"\
 
@@ -1094,7 +1409,7 @@ static unsigned int calculateSubScene(MvsToSLPK_Options& opt)
 // https://github.com/cdcseacave/openMVS/issues/438
 
 
-static bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp = false)
+static bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp)
 {
 	// so machine does not become basically unusable
 	// can be set to 0 to use all available cores
@@ -1321,307 +1636,3 @@ static bool generateSLPK(MvsToSLPK_Options& opt, std::vector<std::vector<std::st
 	return true;
 }
 
-
-int main()
-{
-	std::cout << "MsvToSLPK:  Started" << std::endl;
-
-	int t1 = clock();
-
-	std::vector<std::string> argStdList;
-
-	LPWSTR* szArglist;
-	int nArgs;
-	int i;
-
-	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
-	if (NULL == szArglist)
-	{
-		wprintf(L"CommandLineToArgvW failed\n");
-		return 0;
-	}
-	else {
-		for (i = 0; i < nArgs; i++) {
-			std::wstring tmpStr = szArglist[i];
-			argStdList.push_back(StdUtility::convert(tmpStr));
-		}
-	}
-
-	bool colmapAlreadyRan = false;
-	enum class ProcessingType {FULL, COLMAP_ONLY, MVS_ONLY};
-	ProcessingType processType = ProcessingType::FULL;
-
-	MvsToSLPK_Options opt;
-
-	try {
-		TCLAP::CmdLine cmd("Command MvsToSLPK description message", ' ', "1.0");
-
-		// Define a value argument and add it to the command line.
-		// A value arg defines a flag and a type of value that it expects,
-		// such as "-n Bishop".
-		TCLAP::ValueArg<std::string> summitArg("s", "SummitProj", "Summit Project file", true, "", "string");
-		TCLAP::ValueArg<std::string> workFolderArg("w", "workFolder", "Working folder", true, "", "string");
-		TCLAP::ValueArg<std::string> resultsFolderArg("r", "resultsFolder", "Results folder", true, "", "string");
-		TCLAP::ValueArg<std::string> prjArg("p", "ProjectionFile", "Projection File", false, "", "string");
-		TCLAP::SwitchArg knownArg("k", "UseKnown", "Flag to use known camera poses. Or recalc if EXIF info", true);
-		TCLAP::ValueArg<int> maxSizeArg("m", "MaxImageSize", "Max image size used by undistort", false, 6000, "Integer Value");
-		TCLAP::ValueArg<int> generationTypeArg("g", "Generation", "1-sparse only, 2-dense only, 3-both", false, 3, "Integer Value");
-		TCLAP::ValueArg<int> processingArg("j", "Process", "0-full processing, 1-COLMAP only, 2-OpenMVS only", false, 0, "Integer Value");
-		TCLAP::ValueArg<int> allowMVS_split_Arg("a", "AllowMVSsplit", "0-No, 1-Yes", false, 0, "Integer Value");
-
-
-
-		cmd.add(summitArg);
-		cmd.add(workFolderArg);
-		cmd.add(resultsFolderArg);
-		cmd.add(prjArg);
-		cmd.add(knownArg);
-		cmd.add(maxSizeArg);
-		cmd.add(generationTypeArg);
-		cmd.add(processingArg);
-		cmd.add(allowMVS_split_Arg);
-
-		// Parse the argv array.
-		cmd.parse(argStdList);
-
-		opt.summitProject = summitArg.getValue();
-		opt.workingFolder = workFolderArg.getValue();
-		opt.resultsFolder = resultsFolderArg.getValue();
-		opt.prjFile = prjArg.getValue();
-		opt.alwaysUseKnownCameraPose = knownArg.getValue();
-		opt.distortMaxImageSize = maxSizeArg.getValue();
-		opt.allowMVS_split = allowMVS_split_Arg.getValue() == 1 ? true : false;
-
-		switch (generationTypeArg.getValue())
-		{
-		case 1:
-			opt.gType = MvsToSLPK_Options::GenerationType::SPARSE;
-			break;
-		case 2:
-			opt.gType = MvsToSLPK_Options::GenerationType::DENSE;
-			break;
-		case 3:
-			opt.gType = MvsToSLPK_Options::GenerationType::BOTH;
-			break;
-		default:
-			opt.gType = MvsToSLPK_Options::GenerationType::BOTH;
-			break;
-		}
-
-		switch (processingArg.getValue())
-		{
-		case 0:
-			processType = ProcessingType::FULL;
-			break;
-		case 1:
-			processType = ProcessingType::COLMAP_ONLY;
-			break;
-		case 2:
-			processType = ProcessingType::MVS_ONLY;
-			break;
-		default:
-			processType = ProcessingType::FULL;
-			break;
-		}
-
-		colmapAlreadyRan = isColmapDone(opt);
-
-		// make a param file
-		std::string paramFilename = opt.workingFolder;
-		StdUtility::appendSlash(paramFilename);
-		paramFilename += "param.txt";
-		std::ofstream outParam;
-		outParam.open(paramFilename);
-		if (outParam.is_open()) {
-			outParam << maxSizeArg.getValue() << std::endl;
-			outParam << summitArg.getValue() << std::endl;
-			outParam << workFolderArg.getValue() << std::endl;
-			outParam << resultsFolderArg.getValue() << std::endl;
-			outParam << prjArg.getValue() << std::endl;
-		}
-		outParam.close();
-	}
-	catch (TCLAP::ArgException& e)  // catch exceptions
-	{
-		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
-	}
-
-	//postProgress(0);
-	postProgress(1, "MsvToSLPK: Started");
-
-	StdUtility::createFullDirectoryPath(opt.workingFolder);
-	StdUtility::createFullDirectoryPath(opt.resultsFolder);
-
-	// set up a LOG file
-	std::string logFilename = opt.workingFolder;
-	StdUtility::appendSlash(logFilename);
-	logFilename += "logfile.txt";
-
-	// send cout to terminal and file
-	std::ofstream log_file(logFilename);
-	TeeBuf teeBuf(std::cout.rdbuf(), log_file.rdbuf());
-	std::streambuf* oldCoutBuf = std::cout.rdbuf(&teeBuf);
-
-	auto file_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(log_file);
-	auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-	spdlog::logger logger("multi_sink", { file_sink, console_sink });
-	spdlog::set_default_logger(std::make_shared<spdlog::logger>(logger));
-
-
-	for (i = 0; i < nArgs; i++) {
-		std::string printStr = StdUtility::string_format("%d: %ws", i, szArglist[i]);
-		std::cout << printStr.c_str() << std::endl;
-	}
-	
-	// find the EXEs or default to programmer environment
-	std::wstring thisEXEpath = WinUtility::executable_path();
-	std::wstring exeDir = StdUtility::getDirectory(thisEXEpath);
-	if (!opt.exes.setToPath(exeDir)) {
-		opt.exes.setToDeveloperLocations();
-	}
-
-	spdlog::info("MvsToSLPK begin");
-
-	opt.cpu_cores = std::thread::hardware_concurrency();
-	std::cout << "Number of CPU cores: " << opt.cpu_cores << std::endl;
-
-	// make sure folders exist
-	if (!StdUtility::fileExists(opt.summitProject)) {
-		std::cout << "Summit project not found: " << opt.summitProject.c_str() << std::endl;
-		return -1;
-	}
-
-	// must have GDAL and PROJ data set in ProgramData
-	std::wstring  programDataGDAL = WinUtility::common_APPDATA(L"MvsToSLPK\\GDAL");
-	if (!StdUtility::fileExists(programDataGDAL)) {
-		std::wcout << "GDAL folder not found: " << programDataGDAL.c_str() << std::endl;
-		std::wcout << "GDAL data must be stored here" << std::endl;
-		return -1;
-	}
-	else {
-		std::wcout << "GDAL data found at: " << programDataGDAL.c_str() << std::endl;
-	}
-
-	// write geo information file for COLMAP also write a BOX file of the Geo offset
-
-	// creates geo information (and box file) from Summit project 
-	std::cout << "Starting: writeGeoInfo" << std::endl;
-
-	auto smtPrj = std::shared_ptr<iSMTPRJ>(createISmtPrj(), [](iSMTPRJ* p) { p->Release(); });
-
-	if (!writeGeoInfo(opt, smtPrj)) {
-		// cant continue if this failed
-		spdlog::error("writeGeoInfo reported false.");
-		return -1;
-	}
-
-	if (processType == ProcessingType::FULL || processType == ProcessingType::COLMAP_ONLY) {
-		postProgress(5, "Starting COLMAP");
-
-
-		if (colmapAlreadyRan) {
-			// COLMAP has already been run
-			std::cout << "COLMAP previously ran, SKIPPING this step." << std::endl;
-		}
-		else 
-		{
-			// COLMAP will make the sparse model and finish with undistorted dense folder
-
-			if (false && opt.fixedCameraParameters) {
-				//if (opt.fixedCameraParameters) {
-					// This is not working
-					// point_triangulator keeps modifying the camera
-					// we will go ahead and use mapper - even though it does another bundle adjustment
-					// and takes longer but the result we way better with the distortion in the camera
-				if (!runCOLMAP_fixedCameras(opt)) {
-					return -1;
-				}
-			}
-			else {
-				// COLMAP will make the sparse model and finish with undistorted dense folder
-				std::cout << "Starting: colmap" << std::endl;
-				if (!runCOLMAP(opt)) {
-					// cant continue if this failed
-					spdlog::error("runCOLMAP reported false.");
-					return -1;
-				}
-			}
-
-			colmapToScene(opt);
-		}
-	}
-
-	if (processType == ProcessingType::COLMAP_ONLY) {
-		postProgress(20, "COLMAP: Finished");
-		return 0;
-	}
-
-	if (processType == ProcessingType::FULL || processType == ProcessingType::MVS_ONLY) {
-
-		postProgress(20, "OpenMVS: Started");
-
-		if (opt.gType == MvsToSLPK_Options::GenerationType::SPARSE)
-		{
-			std::cout << "Sparse only selected.  Finished." << std::endl;
-			postProgress(100);
-			return 0;
-		}
-
-#if 1
-		// converts undistorted folder to MVS model and converts it dense
-		// dense is further processed to Mesh and finally a Textured Mesh.
-		// 
-	// 	std::cout << "Starting: MVS" << std::endl;
-	// 	if (!runOpenMvs(opt)) {
-	// 		// cant continue if this failed
-	// 		spdlog::error("runOpenMvs reported false.");
-	// 		return -1;
-	// 	}
-
-		std::cout << std::endl << "Starting: MVS - Multi" << std::endl;
-		if (!runOpenMvsWSplit(opt, opt.allowMVS_split)) {
-			//if (!runOpenMvsWSplit(opt, true)) {
-				// cant continue if this failed
-			spdlog::error("runOpenMvs reported false.");
-			return -1;
-		}
-#endif
-	}
-
-	// print out some information about the generated PLY...
-	printPLYresults(opt);
-
-	if (processType == ProcessingType::MVS_ONLY) {
-		postProgress(20, "OpenMVS: Finished");
-		return 0;
-	}
-
-	postProgress(80, "Make Split files");
-
-	if (opt.hasCoordSystem) {
-		// 3D Tiles and SLPK generation
-		std::vector<std::vector<std::string>> lodSplitfiles;
-		std::cout << "Starting: Split Files" << std::endl;
-		makeSplitFiles(opt, lodSplitfiles);
-
-		postProgress(85, "SLPK and 3D Tile generation");
-		std::cout << "Starting: SLPK and 3D Tile generation" << std::endl;
-		generateSLPK(opt, lodSplitfiles, smtPrj);
-	}
-
-	postProgress(95);
-	
-
-	int t2 = clock();
-
-	std::cout << "Total time: " << float(t2 - t1) / CLOCKS_PER_SEC << " seconds" << std::endl;
-
-	spdlog::info("MvsToSLPK end");
-
-	postProgress(100);
-
-	// Restore the original stream buffer
-	std::cout.rdbuf(oldCoutBuf);
-
-	return 0;
-}
