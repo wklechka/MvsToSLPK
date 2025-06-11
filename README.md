@@ -13,11 +13,10 @@
 
 ## Program Overview:
 This program consists of two execuatbles made for Windows 10 or newer.
- - MvsToSLPK.exe: this does most of the work.
- - mvsToSlpkUI.exe: a quick GUI that calls MvsToSLPK.exe to do the work.
-MvsToSLPK.exe will call COLMAP and OpenMVS execuables
+ - MvsToSLPK.exe: calls COLMAP and OpenMVS and finally generates SLPK.
+ - mvsToSlpkUI.exe: a simple GUI on top of MvsToSLPK.exe.
 
- 3rd Party Executable can be obtained here:
+ 3rd Party executables can be obtained here:
  - COLMAP exes https://colmap.github.io/install.html
  - OpenMVS exes https://github.com/cdcseacave/openMVS
  
