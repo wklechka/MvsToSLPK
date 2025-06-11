@@ -34,3 +34,9 @@ This program consists of two execuatbles made for Windows 10 or newer.
  - OpenMesh https://github.com/Lawrencemm/openmesh
  - RectangleBinPack https://github.com/juj/RectangleBinPack
  - libjxl https://github.com/libjxl/libjxl
+
+## Licenses:
+Each directory has a license file.  Only the ones that touch other GPL code will be GPL; others will be MIT
+ - GPL : MvsToSLPK, slpk3DTile
+ - MIT : ImageRW, PTFile, SmtPrj, StdUtil
+
