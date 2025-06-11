@@ -1,22 +1,23 @@
 # MvsToSLPK
- MVS to SLPK
 
  This program takes an XML project of aerial imagry with exterior infomation and a fixed camera.  Also a projection file is needed to setup coordinate systems; the system should be a projected system (uses PROJ part of GDAL).
  The goal is to generate SLPK/3DTiles which contain georeferenced meshes for viewing in programs like ArcPro.
 
- The process:
- - Converts a xml project to a COLMAP project that is Georeferenced.
+ ## The Process:
+ - Converts a xml project to a COLMAP project that is georeferenced.
  - Uses COLMAP to make the sparse data set.
  - The COLMAP data is converted to OpenMVS.
  - Use OpenMVS executables to generate a textured mesh. An offset file contains the georeferenced offset for the mesh.
  - This newly generated mesh is then split up and levels of detail are made.
  - The split up mesh is then generated into SLPK and 3DTiles
 
-This program:
+## Program Overview:
+This program consists of two execuatbles made for Windows 10 or newer.
  - MvsToSLPK.exe: this does most of the work.
- - mvsToSlpkUI.exe: a quick UI that calls MvsToSLPK to do the work.
+ - mvsToSlpkUI.exe: a quick GUI that calls MvsToSLPK.exe to do the work.
+MvsToSLPK.exe will call COLMAP and OpenMVS execuables
 
- 3rd Party EXEs:
+ 3rd Party Executable can be obtained here:
  - COLMAP exes https://colmap.github.io/install.html
  - OpenMVS exes https://github.com/cdcseacave/openMVS
  
