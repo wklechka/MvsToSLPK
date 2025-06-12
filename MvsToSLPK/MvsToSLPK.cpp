@@ -1533,7 +1533,15 @@ static bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp)
 	else {
 		cmdline = StdUtility::string_format(L"-i \"%s\\scene.mvs\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse 4 --resolution-level %d", denseFolder.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, resLevDensifyPT);
 		std::cout << StdUtility::convert(opt.exes.DensifyPointCloud_EXE.c_str()) << " " << StdUtility::convert(cmdline).c_str() << std::endl;
-		execute(opt.exes.DensifyPointCloud_EXE, cmdline);
+		int result = execute(opt.exes.DensifyPointCloud_EXE, cmdline);
+		if (result != 0) {
+			std::cout << "DensifyPointCloud exited with " << result << std::endl;
+			cudaDevVal = -2;
+			cmdline = StdUtility::string_format(L"-i \"%s\\scene.mvs\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse 4 --resolution-level %d", denseFolder.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, resLevDensifyPT);
+			result = execute(opt.exes.DensifyPointCloud_EXE, cmdline);
+			//cudaDevVal = -1;
+			// if it fails the other step will too
+		}
 
 		postProgress(35);
 
