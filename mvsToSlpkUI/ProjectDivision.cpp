@@ -2,6 +2,7 @@
 #include "ProjectDivision.h"
 #include "StdUtil/StdUtility.h"
 #include "StdUtil/WinUtility.h"
+#include "StdUtil/MathFunc.h"
 #include "SmtPrj/SmtPrj.h"
 
 #include <iostream>
@@ -13,12 +14,15 @@
 #include <cstdlib>
 #include <ctime>
 
+#include "Eigen/Geometry"
+
 #ifdef max
 #undef max
 #endif
 #ifdef min
 #undef min
 #endif
+
 
 // Image structure with XY coordinates
 struct QImage {
@@ -321,6 +325,152 @@ void quadTreeTest()
 }
 
 
+class ImageOrientation
+{
+public:
+	void setUp(const ISmtPrj::ImageInfo& eoInfo, const ISmtPrj::CameraParameters& camInfo)
+	{
+		this->eoInfo = eoInfo;
+		this->camInfo = camInfo;
+
+		if (this->eoInfo.angleUnits == ISmtPrj::DEGREES) {
+			this->eoInfo.omega = MathFunc2::degToRad(this->eoInfo.omega);
+			this->eoInfo.phi = MathFunc2::degToRad(this->eoInfo.phi);
+			this->eoInfo.kappa = MathFunc2::degToRad(this->eoInfo.kappa);
+		}
+		else if (this->eoInfo.angleUnits == ISmtPrj::GRADS) {
+			this->eoInfo.omega = MathFunc2::gradToRad(this->eoInfo.omega * 0.9);
+			this->eoInfo.phi = MathFunc2::gradToRad(this->eoInfo.phi * 0.9);
+			this->eoInfo.kappa = MathFunc2::gradToRad(this->eoInfo.kappa * 0.9);
+		}
+		this->eoInfo.angleUnits = ISmtPrj::RADIANS;
+
+		calculateOrientation();
+	}
+
+	bool pixelToPhoto(const Eigen::Vector2d& pixelCoords,
+		Eigen::Vector2d& photoCoords) const
+	{
+		photoCoords[0] = mA0 + mA1 * pixelCoords[0] - mA2 * pixelCoords[1];
+		photoCoords[1] = mB0 + mB1 * pixelCoords[0] - mB2 * pixelCoords[1];
+		return true;
+	}
+
+	bool photoToGround(const Eigen::Vector2d& photoCoords,
+		Eigen::Vector3d& groundCoords,
+		const double groundZ) const
+	{
+		double focalLength = camInfo.focal;
+
+		double tmp = mOrg(0, 2) * photoCoords[0] + mOrg(1, 2) * photoCoords[1] - mOrg(2, 2) * focalLength;
+
+		if (tmp == 0.)
+		{
+			return false;
+		}
+
+		double namta = (groundZ - eoInfo.projectionCenterZ) / tmp;
+
+		double gndX = eoInfo.projectionCenterX + namta * (mOrg(0, 0) * photoCoords[0] + mOrg(1, 0) * photoCoords[1] - mOrg(2, 0) * focalLength);
+		double gndY = eoInfo.projectionCenterY + namta * (mOrg(0, 1) * photoCoords[0] + mOrg(1, 1) * photoCoords[1] - mOrg(2, 1) * focalLength);
+
+		groundCoords[0] = gndX;
+		groundCoords[1] = gndY;
+		groundCoords[2] = groundZ;
+
+		return true;
+	}
+
+	bool pixelToGround(const Eigen::Vector2d& pixelCoords,
+		Eigen::Vector3d& groundCoords,
+		const double groundZ) const
+	{
+		Eigen::Vector2d photoCoords;
+		pixelToPhoto(pixelCoords, photoCoords);
+
+		return photoToGround(photoCoords, groundCoords, groundZ);
+	}
+
+protected:
+	ISmtPrj::ImageInfo eoInfo;
+	ISmtPrj::CameraParameters camInfo;
+
+	double	mA0, mA1, mA2, mB0, mB1, mB2;
+	Eigen::Matrix3d mOrg;
+
+	void calculateOrientation()
+	{
+		// Calculate the orientation based on the EO info and camera parameters.
+		// You would typically convert omega, phi, kappa to a rotation matrix or quaternion.
+
+		mOrg = Eigen::AngleAxisd(eoInfo.omega, Eigen::Vector3d::UnitX())
+			* Eigen::AngleAxisd(eoInfo.phi, Eigen::Vector3d::UnitY())
+			* Eigen::AngleAxisd(eoInfo.kappa, Eigen::Vector3d::UnitZ());
+
+		// calculate interior
+		double pixelCenterX, pixelCenterY;
+		double photoCenterX, photoCenterY;
+		double Trans1, Trans2, Trans3, Trans4, Trans5, Trans6, Trans7;
+
+		pixelCenterX = pixelCenterY = 0.0;
+		photoCenterX = photoCenterY = 0.0;
+		Trans1 = Trans2 = Trans3 = Trans4 = Trans5 = Trans6 = Trans7 = 0.0;
+
+		double pWidth = camInfo.filmWidth / 2.0;
+		double pHeight = camInfo.filmHeight / 2.0;
+
+		std::vector <Eigen::Vector2d> pixelCorners(4);
+		std::vector <Eigen::Vector2d> photoCorners(4);
+
+		double iW = static_cast<double>(eoInfo.imageWidth - 1);
+		double iH = static_cast<double>(eoInfo.imageHeight - 1);
+
+		pixelCorners[0] = Eigen::Vector2d(0.0, iH);
+		pixelCorners[1] = Eigen::Vector2d(iW, 0.0);
+		pixelCorners[2] = Eigen::Vector2d(0.0, 0.0);
+		pixelCorners[3] = Eigen::Vector2d(iW, iH);
+
+		photoCorners[0] = Eigen::Vector2d(-pWidth, -pHeight);
+		photoCorners[1] = Eigen::Vector2d(pWidth, pHeight);
+		photoCorners[2] = Eigen::Vector2d(-pWidth, pHeight);
+		photoCorners[3] = Eigen::Vector2d(pWidth, -pHeight);
+
+		for (int i = 0; i < pixelCorners.size(); i++)
+		{
+			pixelCenterX += pixelCorners[i][0];
+			pixelCenterY += pixelCorners[i][1];
+			photoCenterX += photoCorners[i][0];
+			photoCenterY += photoCorners[i][1];
+		}
+		pixelCenterX /= pixelCorners.size();
+		pixelCenterY /= pixelCorners.size();
+		photoCenterX /= pixelCorners.size();
+		photoCenterY /= pixelCorners.size();
+
+		for (int i = 0; i < pixelCorners.size(); i++)
+		{
+			double tmp1x = pixelCorners[i][0] - pixelCenterX;
+			double tmp1y = pixelCorners[i][1] - pixelCenterY;
+			double tmp2x = photoCorners[i][0] - camInfo.ppX - photoCenterX;
+			double tmp2y = photoCorners[i][1] - camInfo.ppY - photoCenterY;
+
+			Trans1 += tmp1x * tmp1x;
+			Trans2 += tmp1y * tmp1y;
+			Trans3 += tmp1x * tmp1y;
+			Trans4 += tmp1x * tmp2x;
+			Trans5 += tmp1y * tmp2x;
+			Trans6 += tmp1x * tmp2y;
+			Trans7 += tmp1y * tmp2y;
+		}
+
+		mA1 = (Trans2 * Trans4 - Trans3 * Trans5) / (Trans1 * Trans2 - Trans3 * Trans3);
+		mA2 = -(Trans1 * Trans5 - Trans3 * Trans4) / (Trans1 * Trans2 - Trans3 * Trans3);
+		mB1 = (Trans2 * Trans6 - Trans3 * Trans7) / (Trans1 * Trans2 - Trans3 * Trans3);
+		mB2 = -(Trans1 * Trans7 - Trans3 * Trans6) / (Trans1 * Trans2 - Trans3 * Trans3);
+		mA0 = photoCenterX - mA1 * pixelCenterX + mA2 * pixelCenterY;
+		mB0 = photoCenterY - mB1 * pixelCenterX + mB2 * pixelCenterY;
+	}
+};
 
 bool ProjectDivision::divideProject(ProjectDiv& opt)
 {
@@ -346,6 +496,7 @@ bool ProjectDivision::divideProject(ProjectDiv& opt)
 
 	// make boxes and divide the project
 
+#if 0
 	// first get the project extents
 	double xMin = std::numeric_limits<double>::max();
 	double xMax = std::numeric_limits<double>::lowest();
@@ -371,6 +522,62 @@ bool ProjectDivision::divideProject(ProjectDiv& opt)
 		newImage.y = imageInfo.projectionCenterY;
 		tree.insert(newImage);
 	}
+#else
+
+	double aveElevation = smtPrj->averageGroundZ();
+
+		// first get the project extents
+	double xMin = std::numeric_limits<double>::max();
+	double xMax = std::numeric_limits<double>::lowest();
+	double yMin = std::numeric_limits<double>::max();
+	double yMax = std::numeric_limits<double>::lowest();
+	for (auto& imageInfo : smtPrj->getImageInfos()) {
+
+		ImageOrientation imgOrient;
+		ISmtPrj::CameraParameters cam;
+		smtPrj->getCameraInfo(imageInfo.assignedCamera, cam);
+		imgOrient.setUp(imageInfo, cam);
+
+		Eigen::Vector3d groundCoords;
+		Eigen::Vector2d photoCoords(0.0, 0.0);
+		if (!imgOrient.photoToGround(photoCoords, groundCoords, aveElevation)) {
+			continue; // skip if conversion fails
+		}
+
+		xMin = std::min(xMin, groundCoords[0]);
+		xMax = std::max(xMax, groundCoords[0]);
+		yMin = std::min(yMin, groundCoords[1]);
+		yMax = std::max(yMax, groundCoords[1]);
+	}
+
+	int maxImages = opt.maxImages;      // Max images per node before splitting
+	int minImages = opt.minImages;      // Minimum images required per region
+	double overlapPercentage = opt.overlapPercentage;
+
+	Quadtree tree(xMin, xMax, yMin, yMax, maxImages, minImages, overlapPercentage); // Root region
+
+	for (auto& imageInfo : smtPrj->getImageInfos()) {
+
+		ImageOrientation imgOrient;
+		ISmtPrj::CameraParameters cam;
+		smtPrj->getCameraInfo(imageInfo.assignedCamera, cam);
+		imgOrient.setUp(imageInfo, cam);
+
+		Eigen::Vector3d groundCoords;
+		Eigen::Vector2d photoCoords(0.0, 0.0);
+		if (!imgOrient.photoToGround(photoCoords, groundCoords, aveElevation)) {
+			continue; // skip if conversion fails
+		}
+
+		QImage newImage;
+		newImage.name = imageInfo.imageFile;
+		newImage.x = groundCoords[0];
+		newImage.y = groundCoords[1];
+		tree.insert(newImage);
+	}
+#endif
+
+
 	tree.enforceMinimumImages();
 
 	if (tree.leafCount() == 1) {
@@ -453,3 +660,4 @@ bool ProjectDivision::divideProject(ProjectDiv& opt)
 
 	return opt.projectsGenerated.size() > 1;
 }
+
