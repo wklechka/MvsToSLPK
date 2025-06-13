@@ -6,16 +6,17 @@ mkdir %LOCATION_VAR%
 mkdir %LOCATION_VAR%\COLMAP
 mkdir %LOCATION_VAR%\openMVS
 
-#copy colmap
+rem copy colmap
 xcopy "%COLMAP_LOCATION_VAR%\*.*" %LOCATION_VAR%\COLMAP /s /e
-#
-#copy openMVS
-copy ".\openMVS\Buildv17\bin\vc17\x64\Release\*.*" %LOCATION_VAR%\openMVS
+rem 
+rem copy openMVS
+copy ".\openMVS\Buildv17\bin\vc17\x64\Release\*.exe" %LOCATION_VAR%\openMVS
+copy ".\openMVS\Buildv17\bin\vc17\x64\Release\*.dll" %LOCATION_VAR%\openMVS
 
 copy ".\GitHub\MvsToSLPK\mvsToSlpkUI\x64\Release\*.exe" %LOCATION_VAR%
 copy ".\GitHub\MvsToSLPK\mvsToSlpkUI\x64\Release\*.dll" %LOCATION_VAR%
 
-# copy 3rd party stuff
+rem  copy 3rd party stuff
 
 SET THIRD_PARTY_LOCATION_VAR=.\GitHub\MvsToSLPK\third_party
 
