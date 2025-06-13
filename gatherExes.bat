@@ -45,3 +45,5 @@ copy "%THIRD_PARTY_LOCATION_VAR%\curl\openssl-OpenSSL_1_1_1-stable\Release\bin\l
 
 rem I3S
 copy "%THIRD_PARTY_LOCATION_VAR%\Mesh\i3s\Buildv17\Release\*.dll" %LOCATION_VAR%
+
+copy ".\GitHub\mvsToSlpk\LICENSE.rtf" %LOCATION_VAR%
