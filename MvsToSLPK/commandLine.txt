@@ -20,3 +20,6 @@ PATH=K:\baseline\Packages\Mesh\VTK\Buildv17\bin\Release;K:\baseline\Packages\Mes
 -s "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\Summit\ImpossFull_StereoModels.smtxml" -w "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH\working" -r "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH\results" -g 3 -p "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\DTM\ImpossFull_1_1_tif.las.prj" -m 500
 
 -s "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\Summit\ImpossFull_StereoModels_IOCorrection\ImpossFull_StereoModels.smtxml" -w "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH_IO\working" -r "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\MESH_IO\results" -g 3  -p "K:\CustomerStuff\ImageIQ\impossFull\ImpossFull\Results\DTM\ImpossFull_1_1_tif.las.prj" -m 500
+
+Install:
+\\dtm-unity-data\data\Baseline\Releases\Mesh
