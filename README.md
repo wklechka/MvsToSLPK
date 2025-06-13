@@ -7,9 +7,9 @@
  - Converts a xml project to a COLMAP project that is georeferenced.
  - Uses COLMAP to make the sparse data set.
  - The COLMAP data is converted to OpenMVS.
- - Use OpenMVS executables to generate a textured mesh. An offset file contains the georeferenced offset for the mesh.
+ - Uses the OpenMVS executables to generate a textured mesh. An offset file contains the georeferenced offset for the mesh.
  - This newly generated mesh is then split up and levels of detail are made.
- - The split up mesh is then generated into SLPK and 3DTiles
+ - The split up mesh is then generated into SLPK and 3DTiles.
 
 ## Program Overview:
 This program consists of two execuatbles made for Windows 10 or newer.
