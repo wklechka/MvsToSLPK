@@ -27,6 +27,12 @@ public:
 // Implementation
 
 	DECLARE_MESSAGE_MAP()
+
+private:
+	HANDLE mhMutex = nullptr;
+	bool checkForOtherInstances(const CString& title);
+public:
+	virtual int ExitInstance();
 };
 
 extern CmvsToSlpkUIApp theApp;

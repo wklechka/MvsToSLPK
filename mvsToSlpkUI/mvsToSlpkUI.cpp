@@ -6,6 +6,7 @@
 #include "framework.h"
 #include "mvsToSlpkUI.h"
 #include "mvsToSlpkUIDlg.h"
+#include <mutex>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -33,14 +34,50 @@ CmvsToSlpkUIApp::CmvsToSlpkUIApp()
 
 
 // The one and only CmvsToSlpkUIApp object
-
 CmvsToSlpkUIApp theApp;
+
+
+bool CmvsToSlpkUIApp::checkForOtherInstances(const CString &title)
+{
+	// Create our mutex name
+	CString	mutexName = title;
+
+	mutexName += _T(" Dialog");
+
+	// Create the mutex
+	mhMutex = CreateMutex(nullptr, FALSE, mutexName);
+
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		mhMutex = nullptr;
+
+		// Mutex already exists, which means an instance is already
+		// running.  Find the app with the matching title and bring
+		// it to the top.
+		HWND	hWnd = FindWindowEx(nullptr, nullptr, nullptr, title);
+
+		if (hWnd != nullptr) {
+			if (IsIconic(hWnd)) {
+				ShowWindow(hWnd, SW_RESTORE);
+			}
+
+			SetForegroundWindow(hWnd);
+		}
+
+		return false;
+	}
+
+	return true;
+}
 
 
 // CmvsToSlpkUIApp initialization
 
 BOOL CmvsToSlpkUIApp::InitInstance()
 {
+	if (!checkForOtherInstances(L"Generate Mesh to SLPK/3D Tiles")) {
+		return FALSE;
+	}
+
 	// InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
 	// visual styles.  Otherwise, any window creation will fail.
@@ -106,3 +143,13 @@ BOOL CmvsToSlpkUIApp::InitInstance()
 	return FALSE;
 }
 
+
+int CmvsToSlpkUIApp::ExitInstance()
+{
+	if (mhMutex != NULL) {
+		ReleaseMutex(mhMutex);
+		CloseHandle(mhMutex);
+	}
+
+	return CWinApp::ExitInstance();
+}
