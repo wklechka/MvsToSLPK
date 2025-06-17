@@ -19,6 +19,11 @@ This program consists of two execuatbles made for Windows 10 or newer.
  3rd Party executables can be obtained here:
  - COLMAP exes https://colmap.github.io/install.html
  - OpenMVS exes https://github.com/cdcseacave/openMVS
+
+Program Data:
+
+This program requires data that is part of GDAL and PROJ and will look for it in C:\ProgramData\MvsToSLPK
+This data is found in GDAL at third_party\gdal.3.9\data.  The data can be copied here, but the install will do it automatically.
  
  3rd Party libraries:
  - GDAL 3.9 https://github.com/OSGeo/gdal
