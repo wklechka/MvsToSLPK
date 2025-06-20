@@ -71,7 +71,7 @@ int main()
 	}
 
 	bool colmapAlreadyRan = false;
-	enum class ProcessingType { FULL, COLMAP_ONLY, MVS_ONLY };
+	enum class ProcessingType { FULL, COLMAP_ONLY, MVS_ONLY, SLPK_ONLY };
 	ProcessingType processType = ProcessingType::FULL;
 
 	MvsToSLPK_Options opt;
@@ -89,8 +89,9 @@ int main()
 		TCLAP::SwitchArg knownArg("k", "UseKnown", "Flag to use known camera poses. Or recalc if EXIF info", true);
 		TCLAP::ValueArg<int> maxSizeArg("m", "MaxImageSize", "Max image size used by undistort", false, 6000, "Integer Value");
 		TCLAP::ValueArg<int> generationTypeArg("g", "Generation", "1-sparse only, 2-dense only, 3-both", false, 3, "Integer Value");
-		TCLAP::ValueArg<int> processingArg("j", "Process", "0-full processing, 1-COLMAP only, 2-OpenMVS only", false, 0, "Integer Value");
+		TCLAP::ValueArg<int> processingArg("j", "Process", "0-full processing, 1-COLMAP only, 2-OpenMVS only, 3-SLPK only", false, 0, "Integer Value");
 		TCLAP::ValueArg<int> allowMVS_split_Arg("a", "AllowMVSsplit", "0-No, 1-Yes", false, 0, "Integer Value");
+		TCLAP::ValueArg<int> slpkSplitDivArg("d", "SLPKsplits", "SLPK divisions", false, 1, "Integer Value");
 
 
 		cmd.add(summitArg);
@@ -102,6 +103,7 @@ int main()
 		cmd.add(generationTypeArg);
 		cmd.add(processingArg);
 		cmd.add(allowMVS_split_Arg);
+		cmd.add(slpkSplitDivArg);
 
 		// Parse the argv array.
 		cmd.parse(argStdList);
@@ -113,6 +115,7 @@ int main()
 		opt.alwaysUseKnownCameraPose = knownArg.getValue();
 		opt.distortMaxImageSize = maxSizeArg.getValue();
 		opt.allowMVS_split = allowMVS_split_Arg.getValue() == 1 ? true : false;
+		opt.splitDivisions = slpkSplitDivArg.getValue();
 
 		switch (generationTypeArg.getValue())
 		{
@@ -140,6 +143,9 @@ int main()
 			break;
 		case 2:
 			processType = ProcessingType::MVS_ONLY;
+			break;
+		case 3:
+			processType = ProcessingType::SLPK_ONLY;
 			break;
 		default:
 			processType = ProcessingType::FULL;
@@ -319,6 +325,16 @@ int main()
 	}
 
 	postProgress(80, "Make Split files");
+
+	if (processType == ProcessingType::SLPK_ONLY) {
+		// fetch the files that would have been generated
+
+		// opt.texturePlyResults needs filled in
+		std::wstring denseFolder = StdUtility::convert(opt.workingFolder);
+		denseFolder += L"\\dense";
+
+		StdUtility::findFiles(opt.texturePlyResults, denseFolder, L".*_texture.ply", false);
+	}
 
 	if (opt.hasCoordSystem) {
 		// 3D Tiles and SLPK generation
@@ -1575,7 +1591,8 @@ static void makeSplitFiles(MvsToSLPK_Options& opt, std::vector<std::vector<std::
 		sfOpt.workingFolder += "Splits";
 		sfOpt.workingFolder += StdUtility::string_format("_%d", count);
 		StdUtility::createFullDirectoryPath(sfOpt.workingFolder);
-		sfOpt.splitDivisions = 1;
+		//sfOpt.splitDivisions = 1; // 4 boxes, 2x2
+		sfOpt.splitDivisions = opt.splitDivisions; // 1 box
 
 		slpkDll->generateSplitFiles(sfOpt);
 

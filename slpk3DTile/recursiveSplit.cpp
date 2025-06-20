@@ -103,6 +103,23 @@ bool splitUpMesh(const std::string& ifname, const std::string& outFolder, int sp
 	}
 	recursiveSplitXY(splitMesh, splitDiv, meshBounds, meshes);
 
+	// special case of not splitting
+	if (splitDiv == 0 && meshes.size() == 1) {
+		int meshCount = 0;
+		auto& mesh = meshes[0];
+		mesh.meshFile = outFolder;
+		mesh.meshFile += StdUtility::string_format("\\" SplitName_ "%d.ply", ++meshCount);
+
+		mesh.writeToPLY(mesh.meshFile);
+
+		std::string textureFile = StdUtility::replaceExtension(mesh.meshFile, "png");
+		std::string orgTextureFile = StdUtility::replaceExtension(ifname, "png");
+
+		StdUtility::copyFile(orgTextureFile, textureFile);
+
+		return true;
+	}
+
 	// non threaded version
 #if 0
 	int meshCount = 0;

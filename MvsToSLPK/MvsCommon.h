@@ -104,9 +104,12 @@ public:
 	std::string summitProject;
 	std::string prjFile;
 
+	// SPLK options
 	bool generate3DTiles = true;
 	bool generateSLPK = true;
+	int splitDivisions = 1; // 0 means no split (1 box), 1 means 2x2 (4 boxes), 2 - means 4x4 (16 boxes), 3 - means 8x8 (64 boxes) etc.
 
+	// should always be true
 	bool refineMesh = true;
 
 	bool hasCuda = false;
