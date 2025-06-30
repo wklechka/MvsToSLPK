@@ -190,6 +190,7 @@
     <ClInclude Include="DPIManager.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MFCEditBrowseCtrlEx.h" />
+    <ClInclude Include="MoreOptionsDlg.h" />
     <ClInclude Include="mvsToSlpkUI.h" />
     <ClInclude Include="mvsToSlpkUIDlg.h" />
     <ClInclude Include="pch.h" />
@@ -199,6 +200,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFCEditBrowseCtrlEx.cpp" />
+    <ClCompile Include="MoreOptionsDlg.cpp" />
     <ClCompile Include="mvsToSlpkUI.cpp" />
     <ClCompile Include="mvsToSlpkUIDlg.cpp" />
     <ClCompile Include="pch.cpp">

@@ -7,6 +7,7 @@
 #define IDS_ABOUTBOX                    101
 #define IDD_MVSTOSLPKUI_DIALOG          102
 #define IDR_MAINFRAME                   128
+#define IDD_MORE_OPT                    131
 #define IDC_MFCEDITBROWSE_FOLDER        1000
 #define IDC_PROGRESS1                   1001
 #define IDC_STATIC_INFO                 1002
@@ -16,6 +17,7 @@
 #define IDC_MFCEDITBROWSE_results       1006
 #define IDC_COMBO1                      1007
 #define IDC_COMBO_MAX_IMAGE             1007
+#define IDC_COMBO_PROCESS               1007
 #define IDC_MFCEDITBROWSE_SMTXML        1008
 #define IDC_MFCEDITBROWSE_PRJ           1009
 #define IDC_MFCEDITBROWSE_PRJ2          1010
@@ -24,14 +26,16 @@
 #define IDC_COMBO_SPLIT_AMT             1013
 #define IDC_CHECK1                      1014
 #define IDC_CHECK_OPENMVS_SPLIT         1014
+#define IDC_COMBO2                      1015
+#define IDC_COMBO_SLJK_DIV              1015
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        131
+#define _APS_NEXT_RESOURCE_VALUE        134
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1015
+#define _APS_NEXT_CONTROL_VALUE         1016
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

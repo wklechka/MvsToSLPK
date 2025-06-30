@@ -947,3 +947,30 @@ std::wstring StdUtility::getParentPath(const std::wstring& path)
 	std::filesystem::path mosPath = path;
 	return mosPath.parent_path().wstring();
 }
+
+
+template <class TStr>
+bool isFolderEmptyT(const TStr& fullPath)
+{
+	std::filesystem::path folderPath = fullPath;
+	std::error_code code;
+	if (StdUtility::fileExists(fullPath) && std::filesystem::is_directory(folderPath, code)) {
+		return std::filesystem::is_empty(folderPath);
+	}
+	else {
+		//std::cout << "The path doesn't exist or is not a directory.\n";
+		return true;
+	}
+
+	return false;
+}
+
+bool StdUtility::isFolderEmpty(const std::string& folder)
+{
+	return isFolderEmptyT(folder);
+}
+
+bool StdUtility::isFolderEmpty(const std::wstring& folder)
+{
+	return isFolderEmptyT(folder);
+}

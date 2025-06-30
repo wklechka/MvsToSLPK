@@ -18,6 +18,7 @@ namespace StdUtility
 	bool copyFile(const std::string& srcPath, const std::string& dstPath, bool bFailIfExists = true);
 	bool renameFile(const std::string& srcPath, const std::string& dstPath);
 	bool deleteDirectoryContents(const std::string& srcPath);
+	bool isFolderEmpty(const std::string& folder);
 
 	// regex is a regular expression, not a windows wildcard
 	// example: findFiles(foundFilenames, folder, ".*\\.dll|.*\\.exe", false); This finds all dlls and exe in a folder and not any subfolders
@@ -33,6 +34,7 @@ namespace StdUtility
 	bool copyFile(const std::wstring& srcPath, const std::wstring& dstPath, bool bFailIfExists = true);
 	bool renameFile(const std::wstring& srcPath, const std::wstring& dstPath);
 	bool deleteDirectoryContents(const std::wstring& srcPath);
+	bool isFolderEmpty(const std::wstring& folder);
 
 	bool findFiles(std::vector<std::wstring>& foundFilenames, const std::wstring& search_path, const std::wstring& regex = L".*", bool includeSubdirs = true);
 	bool findSubFoldersNamed(std::vector<std::wstring>& foundFolders, const std::wstring& search_path, const std::wstring& regex = L".*");

@@ -10,6 +10,7 @@
 #include "StdUtil/StdUtility.h"
 #include "StdUtil/WinUtility.h"
 #include "ProjectDivision.h"
+#include "MoreOptionsDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -99,6 +100,7 @@ BEGIN_MESSAGE_MAP(CmvsToSlpkUIDlg, CDialogEx)
 	ON_MESSAGE(APP_FOLDER_SELECTED, &CmvsToSlpkUIDlg::OnFolderSelected)
 	ON_MESSAGE(THREAD_ENDED, &CmvsToSlpkUIDlg::OnThreadComplete)
 	ON_MESSAGE(APP_PROGESS_PIPE, &CmvsToSlpkUIDlg::OnProgressPipe)
+	ON_MESSAGE(APP_POP_OPTIONS, &CmvsToSlpkUIDlg::OnPopOptions)
 	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
@@ -303,6 +305,18 @@ void CmvsToSlpkUIDlg::OnBnClickedButtonProcess()
 		return;
 	}
 
+	if (!StdUtility::isFolderEmpty(std::wstring(outputDir))) {
+		CString msg;
+		msg = L"Output folder is not empty.\n\n";
+		msg += outputDir;
+		msg += L"\n\nAre you sure you want to run anyway?";
+
+		int result = AfxMessageBox(msg, MB_YESNO | MB_ICONQUESTION);
+		if (result != IDYES) {
+			return;
+		}
+	}
+
 	std::wstring exeName = L"MvsToSLPK.exe";
 	// run command line app
 	std::wstring ourPath = WinUtility::executable_path();
@@ -361,6 +375,12 @@ void CmvsToSlpkUIDlg::OnBnClickedButtonProcess()
 			cmdLine += L" -a 1";
 		}
 
+		if (m_openedMoreOptions) {
+			CString moreOptionsStr;
+			moreOptionsStr.Format(L" -d %d -j %d", m_slpkDiv, m_processingArg);
+			cmdLine += moreOptionsStr;
+		}
+
 		// TEST, run colmap only
 		//cmdLine += L" -j 1";
 
@@ -408,6 +428,12 @@ void CmvsToSlpkUIDlg::processMultipleProject(ProjectDivision::ProjectDiv param, 
 		std::wstring cmdLineStr = cmdLine;
 		// TEST, run colmap only
 		//cmdLineStr += L" -j 1";
+
+		if (m_openedMoreOptions) {
+			CString moreOptionsStr;
+			moreOptionsStr.Format(L" -d %d -j %d", m_slpkDiv, m_processingArg);
+			cmdLine += moreOptionsStr;
+		}
 
 
 		WinUtility::disableChildWindows(m_hWnd);
@@ -733,6 +759,56 @@ LRESULT CmvsToSlpkUIDlg::OnProgressPipe(WPARAM wParam, LPARAM lParam)
 		delete msg;
 
 		UpdateData(FALSE);
+	}
+
+	return 1;
+}
+
+BOOL CmvsToSlpkUIDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_F4) // or any key combo you want
+		{
+			/*MessageBox(_T("Test"));*/
+		}
+		else if (pMsg->wParam == VK_ESCAPE) // or any key combo you want
+		{
+			return TRUE; // prevent further processing
+		}
+	}
+	else if (pMsg->message == WM_CHAR) {
+		static std::vector<UCHAR> magicChars;
+		UINT nChar = pMsg->wParam;
+		magicChars.push_back(nChar);
+		if (magicChars.size() > 5) {
+			magicChars.erase(magicChars.begin());
+		}
+
+		CString testStr;
+		for (int i = 0; i < magicChars.size(); ++i) {
+			testStr += magicChars[i];
+		}
+
+		if (testStr.CollateNoCase(L"debug") == 0) {
+			// can not do dialog here, just send a messages
+			PostMessage(APP_POP_OPTIONS);
+		}
+	}
+
+
+	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+LRESULT CmvsToSlpkUIDlg::OnPopOptions(WPARAM wParam, LPARAM lParam)
+{
+	MoreOptionsDlg dlg;
+	int result = dlg.DoModal();
+	if (result == IDOK) {
+		// do something
+		m_slpkDiv = dlg.m_slpk;
+		m_processingArg = dlg.m_process;
+		m_openedMoreOptions = true;
 	}
 
 	return 1;
