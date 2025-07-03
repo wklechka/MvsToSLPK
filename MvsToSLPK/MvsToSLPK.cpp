@@ -92,6 +92,7 @@ int main()
 		TCLAP::ValueArg<int> processingArg("j", "Process", "0-full processing, 1-COLMAP only, 2-OpenMVS only, 3-SLPK only", false, 0, "Integer Value");
 		TCLAP::ValueArg<int> allowMVS_split_Arg("a", "AllowMVSsplit", "0-No, 1-Yes", false, 0, "Integer Value");
 		TCLAP::ValueArg<int> slpkSplitDivArg("d", "SLPKsplits", "SLPK divisions", false, 1, "Integer Value");
+		TCLAP::ValueArg<int> numViewsArg("v", "NumViews", "Minimum number of views: 3 is default", false, 3, "Integer Value");
 
 
 		cmd.add(summitArg);
@@ -104,6 +105,7 @@ int main()
 		cmd.add(processingArg);
 		cmd.add(allowMVS_split_Arg);
 		cmd.add(slpkSplitDivArg);
+		cmd.add(numViewsArg);
 
 		// Parse the argv array.
 		cmd.parse(argStdList);
@@ -116,6 +118,7 @@ int main()
 		opt.distortMaxImageSize = maxSizeArg.getValue();
 		opt.allowMVS_split = allowMVS_split_Arg.getValue() == 1 ? true : false;
 		opt.splitDivisions = slpkSplitDivArg.getValue();
+		opt.minNumViews = numViewsArg.getValue();
 
 		switch (generationTypeArg.getValue())
 		{
@@ -1466,6 +1469,10 @@ static bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp)
 
 	int resLevDensifyPT = 2;
 
+	int numViewsFuse = opt.minNumViews; // 4 is the default, but can be changed to 2 or 3
+	// 2 - Lowering it to 2 (e.g., --number-views-fuse 2) allows fusion in areas with less image overlap, such as historical aerial photos or sparse datasets.
+
+
 	if (splitUp) {
 		// write the Densify.ini file
 		std::wstring densIni = denseFolder;
@@ -1532,7 +1539,7 @@ static bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp)
 
 		// call DensifyPointCloud on each new scene
 		for (auto& mvsSubFile : foundFilenames) {
-			cmdline = StdUtility::string_format(L"-i \"%s\" --dense-config-file \"%s\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse 4 --resolution-level %d", mvsSubFile.c_str(), densIni.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, resLevDensifyPT);
+			cmdline = StdUtility::string_format(L"-i \"%s\" --dense-config-file \"%s\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse %d --resolution-level %d", mvsSubFile.c_str(), densIni.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, numViewsFuse, resLevDensifyPT);
 			std::cout << StdUtility::convert(opt.exes.DensifyPointCloud_EXE.c_str()) << " " << StdUtility::convert(cmdline).c_str() << std::endl;
 			execute(opt.exes.DensifyPointCloud_EXE, cmdline);
 		}
@@ -1547,13 +1554,13 @@ static bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp)
 
 	}
 	else {
-		cmdline = StdUtility::string_format(L"-i \"%s\\scene.mvs\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse 4 --resolution-level %d", denseFolder.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, resLevDensifyPT);
+		cmdline = StdUtility::string_format(L"-i \"%s\\scene.mvs\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse %d --resolution-level %d", denseFolder.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, numViewsFuse, resLevDensifyPT);
 		std::cout << StdUtility::convert(opt.exes.DensifyPointCloud_EXE.c_str()) << " " << StdUtility::convert(cmdline).c_str() << std::endl;
 		int result = execute(opt.exes.DensifyPointCloud_EXE, cmdline);
 		if (result != 0) {
 			std::cout << "DensifyPointCloud exited with " << result << std::endl;
 			cudaDevVal = -2;
-			cmdline = StdUtility::string_format(L"-i \"%s\\scene.mvs\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse 4 --resolution-level %d", denseFolder.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, resLevDensifyPT);
+			cmdline = StdUtility::string_format(L"-i \"%s\\scene.mvs\" -w \"%s\" --cuda-device %d --max-threads %u --number-views-fuse %d --resolution-level %d", denseFolder.c_str(), denseFolder.c_str(), cudaDevVal, maxThreads, numViewsFuse, resLevDensifyPT);
 			result = execute(opt.exes.DensifyPointCloud_EXE, cmdline);
 			//cudaDevVal = -1;
 			// if it fails the other step will too

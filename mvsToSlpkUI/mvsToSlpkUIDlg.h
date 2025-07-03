@@ -84,7 +84,8 @@ public:
 	CString m_smtxml;
 	CString m_prjFile;
 
-	void processMultipleProject(ProjectDivision::ProjectDiv param, int maxImageSize, CString workingDir, CString outputDir, std::wstring fullExePath);
+	void processMultipleProject(ProjectDivision::ProjectDiv param, int maxImageSize, CString workingDir, 
+		CString outputDir, std::wstring fullExePath, int numViews);
 	std::thread m_bkThread;
 	std::atomic<bool> stopThread = false;
 
@@ -98,4 +99,5 @@ public:
 	int m_slpkDiv = 1; // 1 = no division, 2 = divide by 2, 3 = divide by 3, etc.
 	int m_processingArg = 0; // 0 = all, 1 = colmap, 2 = openmvs, 3 = slpk
 	bool m_openedMoreOptions = false;
+	CString m_numViews;
 };

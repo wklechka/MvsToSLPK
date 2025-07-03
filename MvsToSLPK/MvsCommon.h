@@ -124,6 +124,7 @@ public:
 	GenerationType gType = GenerationType::BOTH;
 
 	bool allowMVS_split = false; // allow MVS to split the scene into smaller sub-scenes
+	int minNumViews = 3; // minimum number of views to process a scene, OpenMVS requires at least 2 views to process a scene, but we use 3 to be safe
 
 	//
 	// outputs

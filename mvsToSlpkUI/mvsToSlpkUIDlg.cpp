@@ -68,6 +68,7 @@ CmvsToSlpkUIDlg::CmvsToSlpkUIDlg(CWnd* pParent /*=nullptr*/)
 	, m_radio(1)
 	, m_openmvsSplit(FALSE)
 	, m_splitMaxImages(_T("200"))
+	, m_numViews(_T("3"))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -90,6 +91,7 @@ void CmvsToSlpkUIDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Radio(pDX, IDC_RADIO_SINGLE_PROJ, m_radio);
 	DDX_Check(pDX, IDC_CHECK_OPENMVS_SPLIT, m_openmvsSplit);
 	DDX_CBString(pDX, IDC_COMBO_SPLIT_AMT, m_splitMaxImages);
+	DDX_CBString(pDX, IDC_COMBO_NUM_VIEWS, m_numViews);
 }
 
 BEGIN_MESSAGE_MAP(CmvsToSlpkUIDlg, CDialogEx)
@@ -160,7 +162,10 @@ BOOL CmvsToSlpkUIDlg::OnInitDialog()
 	if (WinUtility::loadSetting(REG_KEY_NAME, L"m_splitMaxImages", tmp)) {
 		m_splitMaxImages = tmp.c_str();
 	}
-	
+
+	if (WinUtility::loadSetting(REG_KEY_NAME, L"m_numViews", tmp)) {
+		m_numViews = tmp.c_str();
+	}
 
 	UpdateData(FALSE);
 
@@ -340,6 +345,7 @@ void CmvsToSlpkUIDlg::OnBnClickedButtonProcess()
 		maxImageSize = 500;
 	}
 
+	int numViews = _wtoi(m_numViews);
 
 	CString workingDir = outputDir;
 	workingDir += "\\working";
@@ -364,12 +370,12 @@ void CmvsToSlpkUIDlg::OnBnClickedButtonProcess()
 	
 
 	if (shouldDivideProject) {
-		m_bkThread = std::thread(&CmvsToSlpkUIDlg::processMultipleProject, this, param, maxImageSize, workingDir, outputDir, fullExePath);
+		m_bkThread = std::thread(&CmvsToSlpkUIDlg::processMultipleProject, this, param, maxImageSize, workingDir, outputDir, fullExePath, numViews);
 	}
 	else {
 		// make the command line
 		CString cmdLine;
-		cmdLine.Format(L"-s \"%ls\" -p \"%ls\" -m %d -w \"%ls\" -r \"%ls\" -g 3", m_smtxml, m_prjFile, maxImageSize, workingDir, outputDir);
+		cmdLine.Format(L"-s \"%ls\" -p \"%ls\" -m %d -w \"%ls\" -r \"%ls\" -g 3 -v %d", m_smtxml, m_prjFile, maxImageSize, workingDir, outputDir, numViews);
 
 		if (m_openmvsSplit) {
 			cmdLine += L" -a 1";
@@ -396,7 +402,8 @@ void CmvsToSlpkUIDlg::OnBnClickedButtonProcess()
 	}
 }
 
-void CmvsToSlpkUIDlg::processMultipleProject(ProjectDivision::ProjectDiv param, int maxImageSize, CString workingDir, CString outputDir, std::wstring fullExePath)
+void CmvsToSlpkUIDlg::processMultipleProject(ProjectDivision::ProjectDiv param, int maxImageSize, CString workingDir, CString outputDir, 
+	std::wstring fullExePath, int numViews)
 {
 	stopThread = false;
 	int projectNumber = 0;
@@ -423,7 +430,7 @@ void CmvsToSlpkUIDlg::processMultipleProject(ProjectDivision::ProjectDiv param, 
 
 		// make the command line
 		CString cmdLine;
-		cmdLine.Format(L"-s \"%ls\" -p \"%ls\" -m %d -w \"%ls\" -r \"%ls\" -g 3", wSmtxml.c_str(), m_prjFile, maxImageSize, workDir, outDir);
+		cmdLine.Format(L"-s \"%ls\" -p \"%ls\" -m %d -w \"%ls\" -r \"%ls\" -g 3 -v %d", wSmtxml.c_str(), m_prjFile, maxImageSize, workDir, outDir, numViews);
 
 		std::wstring cmdLineStr = cmdLine;
 		// TEST, run colmap only
@@ -637,6 +644,7 @@ void CmvsToSlpkUIDlg::saveToReg()
 	WinUtility::saveSetting(REG_KEY_NAME, L"m_maxImage", m_maxImage);
 	WinUtility::saveSetting(REG_KEY_NAME, L"m_openmvsSplit", m_openmvsSplit);
 	WinUtility::saveSetting(REG_KEY_NAME, L"m_splitMaxImages", m_splitMaxImages);
+	WinUtility::saveSetting(REG_KEY_NAME, L"m_numViews", m_numViews);
 }
 
 void CmvsToSlpkUIDlg::OnCancel()
