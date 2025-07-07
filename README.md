@@ -3,7 +3,7 @@
  This program takes an XML project of aerial imagry with exterior infomation and a fixed camera.  Also a projection file is needed to setup coordinate systems; the system should be a projected system (uses PROJ part of GDAL).
  The goal is to generate SLPK/3DTiles which contain georeferenced meshes for viewing in programs like ArcPro.
 
-[Users Guide](UsersGuide/UserGuide.md)
+[Users Guide](UsersGuide/UsersGuide.md)
 
 
  ## The Process:
