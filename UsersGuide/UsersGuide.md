@@ -15,7 +15,7 @@ There are two input files: a Summit project (smtxml) and a PRJ. The PRJ is a fil
 
 The output will go to the selected 'Results' folder.
 
-If you are an ImageIQ™ user you can select your ImageIQ results folder and the SMTPRJ, PRJ and Results folder will be filled in automatically.
+ImageIQ™ users can simply select their results folder, and the SMTPRJ, PRJ, and Results folders will be filled in automatically.
 
 ## Options Explained:
 
