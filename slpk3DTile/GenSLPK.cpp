@@ -206,7 +206,7 @@ static void toLatLonMesh(const std::string& projFile , i3slib::i3s::Simple_raw_m
 static i3slib::i3s::Layer_writer::Var create_writer(const std::filesystem::path& slpk_path)
 {
 	i3slib::i3s::Ctx_properties ctx_props(i3slib::i3s::Max_major_versions({}));
-	//i3slib::i3s::set_geom_compression(ctx_props.geom_encoding_support, i3slib::i3s::Geometry_compression::Draco, true);
+	i3slib::i3s::set_geom_compression(ctx_props.geom_encoding_support, i3slib::i3s::Geometry_compression::Draco, true);
 	//i3slib::i3s::set_gpu_compression(ctx_props.gpu_tex_encoding_support, i3slib::i3s::GPU_texture_compression::ETC_2, true);
 	auto writer_context = i3slib::i3s::create_i3s_writer_context(ctx_props);
 
