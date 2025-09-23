@@ -11,11 +11,11 @@ Here is the user interface:
 
 ![UI](theUI.jpg)
 
-There are two input files: a Summit project (smtxml) and a PRJ. The PRJ is a file containing the PROJ WKT coordinate system. The smtxml is an XML file used by DAT/EM's Summit Evolution™ stereoplotter application.
+There are two input files: a Summit project (smtxml) and a PRJ. The PRJ is a file containing the PROJ WKT coordinate system. The smtxml is an XML file used by DAT/EM's Summit Evolution™ Stereoplotter application.
 
 The output will go to the selected 'Results' folder.
 
-ImageIQ™ users can simply select their results folder, and the SMTPRJ, PRJ, and Results folders will be filled in automatically.
+ImageIQ™ users can simply select their results folder, and the SMTXML, PRJ, and Results folders will be filled in automatically.
 
 ## Options Explained:
 
