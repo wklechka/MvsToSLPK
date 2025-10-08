@@ -240,7 +240,18 @@ LRESULT CmvsToSlpkUIDlg::OnFolderSelected(WPARAM wParam, LPARAM lParam)
 	StdUtility::findFiles(foundFilenames, folder, L".*\\.smtxml", true);
 
 	if (foundFilenames.size() > 0) {
-		m_smtxml = foundFilenames[0].c_str();
+
+		int bestIndex = 0;
+		for (int i = 0; i < foundFilenames.size(); ++i) {
+			size_t foundPos = foundFilenames[i].find(L"StereoModels");
+
+			// Check if the substring was found
+			if (foundPos != std::string::npos) {
+				bestIndex = i;
+			}
+		}
+
+		m_smtxml = foundFilenames[bestIndex].c_str();
 	}
 
 	// find the Prj
