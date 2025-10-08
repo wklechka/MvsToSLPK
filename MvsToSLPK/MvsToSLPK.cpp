@@ -35,7 +35,7 @@
 
 // forward declarations
 bool isColmapDone(MvsToSLPK_Options& opt);
-bool writeGeoInfo(MvsToSLPK_Options& opt, std::shared_ptr<iSMTPRJ>& smtPrj);
+bool writeGeoInfo(MvsToSLPK_Options& opt, std::shared_ptr<iSMTPRJ>& smtPrj, std::string& errString);
 bool runCOLMAP_fixedCameras(MvsToSLPK_Options& opt);
 bool runCOLMAP2(MvsToSLPK_Options& opt);
 bool runCOLMAP(MvsToSLPK_Options& opt, bool endAtSpase = false);
@@ -43,6 +43,11 @@ bool colmapToScene(MvsToSLPK_Options& opt);
 bool runOpenMvsWSplit(MvsToSLPK_Options& opt, bool splitUp);
 void makeSplitFiles(MvsToSLPK_Options& opt, std::vector<std::vector<std::string>>& lodSplitfiles);
 bool generateSLPK(MvsToSLPK_Options& opt, std::vector<std::vector<std::string>>& lodSplitfiles, std::shared_ptr<iSMTPRJ>& smtPrj);
+
+#define RET_ON_FAILURE(message) \
+     std::cout << "An error occurred: " << message << std::endl; \
+	 system("pause"); \
+	return -1;
 
 // MAIN FUNCTION
 int main()
@@ -61,7 +66,7 @@ int main()
 	if (NULL == szArglist)
 	{
 		wprintf(L"CommandLineToArgvW failed\n");
-		return 0;
+		RET_ON_FAILURE("CommandLineToArgvW failed");
 	}
 	else {
 		for (i = 0; i < nArgs; i++) {
@@ -219,18 +224,18 @@ int main()
 	// make sure folders exist
 	if (!StdUtility::fileExists(opt.summitProject)) {
 		std::cout << "Summit project not found: " << opt.summitProject.c_str() << std::endl;
-		return -1;
+		RET_ON_FAILURE("")
 	}
 
 	// must have GDAL and PROJ data set in ProgramData
 	std::wstring  programDataGDAL = WinUtility::common_APPDATA(L"MvsToSLPK\\GDAL");
 	if (!StdUtility::fileExists(programDataGDAL)) {
-		std::wcout << "GDAL folder not found: " << programDataGDAL.c_str() << std::endl;
-		std::wcout << "GDAL data must be stored here" << std::endl;
-		return -1;
+		std::wcout << L"GDAL folder not found: " << programDataGDAL.c_str() << std::endl;
+		std::wcout << L"GDAL data must be stored here" << std::endl;
+		RET_ON_FAILURE("Likely improper install or deleted data")
 	}
 	else {
-		std::wcout << "GDAL data found at: " << programDataGDAL.c_str() << std::endl;
+		std::wcout << L"GDAL data found at: " << programDataGDAL.c_str() << std::endl;
 	}
 
 	// write geo information file for COLMAP also write a BOX file of the Geo offset
@@ -240,10 +245,12 @@ int main()
 
 	auto smtPrj = std::shared_ptr<iSMTPRJ>(createISmtPrj(), [](iSMTPRJ* p) { p->Release(); });
 
-	if (!writeGeoInfo(opt, smtPrj)) {
+	std::string errString;
+	if (!writeGeoInfo(opt, smtPrj, errString)) {
 		// cant continue if this failed
 		spdlog::error("writeGeoInfo reported false.");
-		return -1;
+		
+		RET_ON_FAILURE(errString)
 	}
 
 	if (processType == ProcessingType::FULL || processType == ProcessingType::COLMAP_ONLY) {
@@ -265,7 +272,7 @@ int main()
 					// we will go ahead and use mapper - even though it does another bundle adjustment
 					// and takes longer but the result we way better with the distortion in the camera
 				if (!runCOLMAP_fixedCameras(opt)) {
-					return -1;
+					RET_ON_FAILURE("Colmap failed.")
 				}
 			}
 			else {
@@ -274,7 +281,7 @@ int main()
 				if (!runCOLMAP(opt)) {
 					// cant continue if this failed
 					spdlog::error("runCOLMAP reported false.");
-					return -1;
+					RET_ON_FAILURE("Colmap failed.")
 				}
 			}
 
@@ -314,7 +321,7 @@ int main()
 			//if (!runOpenMvsWSplit(opt, true)) {
 				// cant continue if this failed
 			spdlog::error("runOpenMvs reported false.");
-			return -1;
+			RET_ON_FAILURE("MVS failure.  See log file in Dense subfolder")
 		}
 #endif
 	}
@@ -488,17 +495,25 @@ static void preprocessCameraAndCoordSys(MvsToSLPK_Options& opt, std::shared_ptr<
 }
 
 // write geo information file for COLMAP also write a BOX file of the Geo offset
-static bool writeGeoInfo(MvsToSLPK_Options& opt, std::shared_ptr<iSMTPRJ> &smtPrj)
+static bool writeGeoInfo(MvsToSLPK_Options& opt, std::shared_ptr<iSMTPRJ> &smtPrj, std::string &errString)
 {
 	std::string summitProject = opt.summitProject;
 	std::string workfolder = opt.workingFolder;
 
 	if (summitProject.empty() || workfolder.empty()) {
+		errString = "writeGeoInfo:: Summit project filename or workfolder are empty.";
 		return false;
 	}
 
 	// need a summit project and scene.mvs to create the transform
 	if (!smtPrj->setFile(summitProject.c_str())) {
+		errString = "writeGeoInfo:: unable to read or recognize Summit Project.";
+		return false;
+	}
+
+	std::string projectType = smtPrj->getProjectType();
+	if (projectType != "Aerial") {
+		errString = "writeGeoInfo:: Summit Project is not Aerial, type: " + projectType + " detected";
 		return false;
 	}
 
@@ -649,6 +664,9 @@ static bool writeGeoInfo(MvsToSLPK_Options& opt, std::shared_ptr<iSMTPRJ> &smtPr
 		}
 	}
 
+	if (opt.camList.size() == 0) {
+		return false;
+	}
 	
 
 	// set the images folder...for now assume all in same directory
