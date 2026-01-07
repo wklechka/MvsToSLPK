@@ -791,11 +791,17 @@ bool rearrageImageOrderDB(MvsToSLPK_Options& opt, std::string& dbFile)
 
 bool imageTo8bit(const std::string& inputImageName, const std::string& outImage)
 {
+	// if the outImage already exists, skip
+	if (StdUtility::fileExists(outImage)) {
+		return true;
+	}
+
 	auto iif = std::shared_ptr<IImageReader>(createIImageReader(), [](IImageReader* p) { p->Release(); });
 
 
 	IImageReader& fm = *iif;
  	fm.ignoreUpperBands(true);
+	fm.forceColorOutput(true);
 
 	if (!fm.setFile(inputImageName.c_str())) {
 		return false;

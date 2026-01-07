@@ -25,6 +25,7 @@ public:
 	virtual void Release() override;
 
 	virtual void ignoreUpperBands(bool val) override { _ignoreUpperBands = val; }
+	virtual void forceColorOutput(bool val) override { _forceColorOutput = true; }
 
 	virtual bool setFile(const char* filename) override;
 	virtual bool getImageInfo(GDALImageInfo& info) override;
@@ -49,6 +50,8 @@ protected:
 	void cleanup();
 
 	bool _ignoreUpperBands = false;
+	bool _forceColorOutput = false;
+	bool _useForceColorOutputChannels = false;
 };
 
 IIMAGEREADER_DLL IImageReader* createIImageReader()
@@ -336,11 +339,17 @@ bool IGDALReaderImpl::getImageInfo(const char* filename, GDALImageInfo& info)
 	info._imageHeight = poDataset->GetRasterYSize();
 	info._numChannels = poDataset->GetRasterCount();
 
+	if (_forceColorOutput && info._numChannels == 1) {
+		_useForceColorOutputChannels = true;
+		info._numChannels = 3;
+	}
+
 	if (_ignoreUpperBands) {
 		if (info._numChannels > 3) {
 			info._numChannels = 3;
 		}
 	}
+	
 
 	GDALRasterBand* poBand;
 	int             nBlockXSize, nBlockYSize;
@@ -517,27 +526,56 @@ bool IGDALReaderImpl::readRect(int nXOff, int nYOff, int nXSize, int nYSize, int
 	// make some mem for our bands
 	std::vector<void*> bandMem;
 
-	for (int i = 0; i < _info._numChannels; ++i) {
-		GDALRasterBand* poBand;
-		poBand = _poDataset->GetRasterBand(i + 1);
+	// if this is on then we need to read 1 band and make it three
+	if (_useForceColorOutputChannels) {
+		// read band 1 three times
+		// in this case _info._numChannels is 3 already
+		for (int i = 0; i < _info._numChannels; ++i) {
+			GDALRasterBand* poBand;
+			poBand = _poDataset->GetRasterBand(1); // always read band 1 and fetch 3 channels
 
-		bandMem.push_back(nullptr);
+			bandMem.push_back(nullptr);
 
-		if (!poBand)
-			break;
+			if (!poBand)
+				break;
 
-		// make some mem
-		bandMem[bandMem.size() - 1] = CPLMalloc(_info._bytesPerChannel * nBufXSize * nBufYSize);
+			// make some mem
+			bandMem[bandMem.size() - 1] = CPLMalloc(_info._bytesPerChannel * nBufXSize * nBufYSize);
 
-		GDALRasterIOExtraArg sExtraArg;
-		INIT_RASTERIO_EXTRA_ARG(sExtraArg);
-		sExtraArg.eResampleAlg = GRIORA_Cubic;
+			GDALRasterIOExtraArg sExtraArg;
+			INIT_RASTERIO_EXTRA_ARG(sExtraArg);
+			sExtraArg.eResampleAlg = GRIORA_Cubic;
 
 
-		CPLErr err = poBand->RasterIO(GF_Read, nXOff, nYOff, nXSize, nYSize,
-			bandMem[bandMem.size() - 1], nBufXSize, nBufYSize, dataType,
-			0, 0, &sExtraArg);
+			CPLErr err = poBand->RasterIO(GF_Read, nXOff, nYOff, nXSize, nYSize,
+				bandMem[bandMem.size() - 1], nBufXSize, nBufYSize, dataType,
+				0, 0, &sExtraArg);
+		}
 	}
+	else {
+		for (int i = 0; i < _info._numChannels; ++i) {
+			GDALRasterBand* poBand;
+			poBand = _poDataset->GetRasterBand(i + 1);
+
+			bandMem.push_back(nullptr);
+
+			if (!poBand)
+				break;
+
+			// make some mem
+			bandMem[bandMem.size() - 1] = CPLMalloc(_info._bytesPerChannel * nBufXSize * nBufYSize);
+
+			GDALRasterIOExtraArg sExtraArg;
+			INIT_RASTERIO_EXTRA_ARG(sExtraArg);
+			sExtraArg.eResampleAlg = GRIORA_Cubic;
+
+
+			CPLErr err = poBand->RasterIO(GF_Read, nXOff, nYOff, nXSize, nYSize,
+				bandMem[bandMem.size() - 1], nBufXSize, nBufYSize, dataType,
+				0, 0, &sExtraArg);
+		}
+	}
+	
 
 	// put the data into the passed in buffer
 	if (_info._bytesPerChannel == 2) {

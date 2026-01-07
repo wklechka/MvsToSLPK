@@ -610,6 +610,8 @@ static bool writeGeoInfo(MvsToSLPK_Options& opt, std::shared_ptr<iSMTPRJ> &smtPr
 			outImage += ".tif";
 			imageTo8bit(imagePath, outImage);
 
+			std::cout << "Converted: " << imagePath << std::endl;
+
 			newImagesToProcess.push_back(outImage);
 		}
 
