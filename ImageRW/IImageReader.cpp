@@ -11,10 +11,10 @@
 #include <algorithm>
 #include <string>
 #include <mutex>
+#include <array>
 #include "StdUtil/StdUtility.h"
 #include "StdUtil/WinUtility.h"
 #include "gdalCommon.h"
-
 
 class IGDALReaderImpl : public IImageReader
 {
@@ -25,7 +25,8 @@ public:
 	virtual void Release() override;
 
 	virtual void ignoreUpperBands(bool val) override { _ignoreUpperBands = val; }
-	virtual void forceColorOutput(bool val) override { _forceColorOutput = true; }
+	virtual void forceColorOutput(bool val) override { _forceColorOutput = val; }
+	virtual void force8Bit(bool val) override { _force8bit = val; }
 
 	virtual bool setFile(const char* filename) override;
 	virtual bool getImageInfo(GDALImageInfo& info) override;
@@ -52,6 +53,16 @@ protected:
 	bool _ignoreUpperBands = false;
 	bool _forceColorOutput = false;
 	bool _useForceColorOutputChannels = false;
+
+	bool _force8bit = false;
+	bool _useForce8bitChannels = false;
+	bool readRectForce8bit(int nXOff, int nYOff, int nXSize, int nYSize, int nBufXSize, int nBufYSize, BYTE* data);
+	bool _hasLut = false;
+	
+	static constexpr int MAX_LUTS = 10;
+	std::array<std::unique_ptr<uint8_t[]>, MAX_LUTS> m_luts;
+
+	void calculateLUTs();
 };
 
 IIMAGEREADER_DLL IImageReader* createIImageReader()
@@ -79,6 +90,10 @@ void IGDALReaderImpl::cleanup()
 		GDALClose(_poDataset);
 	}
 	_poDataset = nullptr;
+	_hasLut = false;
+	for (int i = 0; i < m_luts.size(); ++i) {
+		m_luts[i].reset();
+	}
 }
 
 void IGDALReaderImpl::Release()
@@ -154,6 +169,7 @@ bool IGDALReaderImpl::getGeoInfo(IImageFormat_GeoInfo& geoInfo)
 	matrix[3][0] = geoInfo._upperLeftGeo[0];
 	matrix[3][1] = geoInfo._upperLeftGeo[1];
 
+#pragma warning(suppress: 4838)
 	Point3D vec2 = { _info._imageWidth - 1, _info._imageHeight - 1, 0.0 };
 	newVec = matMult(vec2, matrix);
 
@@ -181,7 +197,8 @@ bool IGDALReaderImpl::getGeoInfo(IImageFormat_GeoInfo& geoInfo)
 	return true;
 }
 
-inline void rtrimZeros(std::string& s, unsigned char valToTrim) {
+inline void rtrimZeros(std::string& s, unsigned char valToTrim) 
+{
 	s.erase(std::find_if(s.rbegin(), s.rend(), [valToTrim](unsigned char ch) {
 		return valToTrim != ch;
 		}).base(), s.end());
@@ -343,6 +360,9 @@ bool IGDALReaderImpl::getImageInfo(const char* filename, GDALImageInfo& info)
 		_useForceColorOutputChannels = true;
 		info._numChannels = 3;
 	}
+	else {
+		_useForceColorOutputChannels = false;
+	}
 
 	if (_ignoreUpperBands) {
 		if (info._numChannels > 3) {
@@ -394,6 +414,12 @@ bool IGDALReaderImpl::getImageInfo(const char* filename, GDALImageInfo& info)
 		info._bytesPerChannel = 2;
 		info._bitsPerSample = 16;
 		break;
+	}
+
+	if (_force8bit && info._bytesPerChannel == 2) {
+		_useForce8bitChannels = true;
+		info._bytesPerChannel = 1;
+		info._bitsPerSample = 8;
 	}
 
 	info._colorInterp = poBand->GetColorInterpretation();
@@ -496,6 +522,7 @@ bool IGDALReaderImpl::readRect(int nXOff, int nYOff, int nBufXSize, int nBufYSiz
 	int nYSize = nBufYSize;
 
 	if (_imageNum > 0) {
+#pragma warning(suppress: 4244)
 		int mult = pow(2, _imageNum);
 
 		// find offset on 1x
@@ -510,8 +537,172 @@ bool IGDALReaderImpl::readRect(int nXOff, int nYOff, int nBufXSize, int nBufYSiz
 	return readRect(nXOff, nYOff, nXSize, nYSize, nBufXSize, nBufYSize, data);
 }
 
+void IGDALReaderImpl::calculateLUTs()
+{
+	GDALDataType dataType = GDT_UInt16;
+
+	_hasLut = true;
+
+	for (int i = 0; i < _info._numChannels; ++i) {
+		GDALRasterBand* band = _useForceColorOutputChannels ? _poDataset->GetRasterBand(1) : _poDataset->GetRasterBand(i + 1);
+
+
+		int hasNoData = FALSE;
+		double noData = band->GetNoDataValue(&hasNoData);
+
+
+		int imgWidth = _poDataset->GetRasterXSize();
+		int imgHeight = _poDataset->GetRasterYSize();
+
+		int width = imgWidth;
+		int height = imgHeight;
+
+		constexpr int MAX_DIM = 3000;
+		while (width > MAX_DIM || height > MAX_DIM) {
+			width /= 2;
+			height /= 2;
+		}
+
+		std::vector<uint16_t> buffer(width * height);
+
+		band->RasterIO(GF_Read, 0, 0, imgWidth, imgHeight,
+			buffer.data(), width, height,
+			dataType, 0, 0);
+
+		// this is a simple histogram stretch with cutoffs at 0.5 percent
+		constexpr int IMAGE16BIT_SIZE = 65536;
+
+		std::vector<uint32_t> hist(IMAGE16BIT_SIZE);
+		for (auto v : buffer) hist[v]++;
+
+		auto percentile_lower = [&](const auto& hist, double pct) {
+			int total = 0;
+			for (int i = 0; i < hist.size(); ++i)
+				total += hist[i];
+
+			int cut = static_cast<int>(total * pct);
+			int acc = 0;
+
+			for (int i = 0; i < hist.size(); ++i) {
+				acc += hist[i];
+				if (acc >= cut)
+					return static_cast<uint16_t>(i);
+			}
+			return static_cast<uint16_t>(IMAGE16BIT_SIZE-1);
+			};
+		auto percentile_upper = [&](const auto& hist, double pct) {
+			int total = 0;
+			for (int i = 0; i < hist.size(); ++i)
+				total += hist[i];
+
+			int cut = static_cast<int>(total * pct);
+			int acc = 0;
+
+			for (int i = int(hist.size())-1; i >= 0; --i) {
+				acc += hist[i];
+				if (acc >= cut)
+					return static_cast<uint16_t>(i);
+			}
+			return static_cast<uint16_t>(0);
+			};
+
+		constexpr double CUTOFF_PERCENT = 0.005;
+
+		uint16_t rLow = percentile_lower(hist, CUTOFF_PERCENT);
+		uint16_t rHigh = percentile_upper(hist, CUTOFF_PERCENT);
+
+		double scale = 255.0 / (rHigh - rLow);
+
+		m_luts[i] = std::make_unique<uint8_t[]>(IMAGE16BIT_SIZE);
+
+		for (int j = 0; j < IMAGE16BIT_SIZE; j++) {
+			double v = (j - rLow) * scale;
+			v = std::clamp(v, 0.0, 255.0);
+			m_luts[i][j] = static_cast<uint8_t>(v);
+		}
+	}
+}
+
+// only called if _useForce8bitChannels is true
+// this is only called if a 16 bit image is being read and converted to 8 bit
+bool IGDALReaderImpl::readRectForce8bit(int nXOff, int nYOff, int nXSize, int nYSize, int nBufXSize, int nBufYSize, BYTE* data)
+{
+	if (!_poDataset)
+		return false; // setFile never called
+
+	if (!_hasLut) {
+		calculateLUTs();
+	}
+	// read as 16 bit then convert
+	GDALDataType dataType = GDT_UInt16;
+
+	// make some mem for our bands
+	std::vector<void*> bandMem;
+
+	for (int i = 0; i < _info._numChannels; ++i) {
+		GDALRasterBand* poBand;
+
+		// if _useForceColorOutputChannels always read band 1 and fetch 3 channels
+		poBand = _useForceColorOutputChannels ? _poDataset->GetRasterBand(1) : _poDataset->GetRasterBand(i + 1);
+
+		bandMem.push_back(nullptr);
+
+		if (!poBand)
+			break;
+
+		// make some mem
+		bandMem[bandMem.size() - 1] = CPLMalloc(2 * nBufXSize * nBufYSize);
+
+		GDALRasterIOExtraArg sExtraArg;
+		INIT_RASTERIO_EXTRA_ARG(sExtraArg);
+		sExtraArg.eResampleAlg = GRIORA_Cubic;
+
+
+		CPLErr err = poBand->RasterIO(GF_Read, nXOff, nYOff, nXSize, nYSize,
+			bandMem[bandMem.size() - 1], nBufXSize, nBufYSize, dataType,
+			0, 0, &sExtraArg);
+	}
+
+	// convert all buffers to 8 bit
+	std::vector<void*> bandMem8Bit;
+	for (int i = 0; i < _info._numChannels; ++i) {
+		bandMem8Bit.push_back(nullptr);
+		bandMem8Bit[bandMem8Bit.size() - 1] = CPLMalloc(1 * nBufXSize * nBufYSize);
+
+		for (int j = 0; j < nBufYSize; ++j) {
+			for (int k = 0; k < nBufXSize; ++k) {
+				//convert to 8 bit
+				*((BYTE*)(bandMem8Bit[i]) + k + (j * nBufXSize)) = m_luts[i][*((WORD*)(bandMem[i]) + k + (j * nBufXSize))];
+			}
+		}
+	}
+
+	// put the data into the passed in buffer
+
+	BYTE* destPtr = data;
+	for (int j = 0; j < nBufYSize; ++j) {
+		for (int k = 0; k < nBufXSize; ++k) {
+			for (int i = 0; i < _info._numChannels; ++i) {
+				*(destPtr++) = *((BYTE*)(bandMem8Bit[i]) + k + (j * nBufXSize));
+			}
+		}
+	}
+
+	for (int i = 0; i < _info._numChannels; ++i) {
+		CPLFree(bandMem[i]);
+	}
+	for (int i = 0; i < _info._numChannels; ++i) {
+		CPLFree(bandMem8Bit[i]);
+	}
+
+	return true;
+}
+
 bool IGDALReaderImpl::readRect(int nXOff, int nYOff, int nXSize, int nYSize, int nBufXSize, int nBufYSize, BYTE* data)
 {
+	if (_useForce8bitChannels) {
+		return readRectForce8bit(nXOff, nYOff, nXSize, nYSize, nBufXSize, nBufYSize, data);
+	}
 
 	if (!_poDataset)
 		return false; // setFile never called
@@ -526,56 +717,30 @@ bool IGDALReaderImpl::readRect(int nXOff, int nYOff, int nXSize, int nYSize, int
 	// make some mem for our bands
 	std::vector<void*> bandMem;
 
-	// if this is on then we need to read 1 band and make it three
-	if (_useForceColorOutputChannels) {
-		// read band 1 three times
-		// in this case _info._numChannels is 3 already
-		for (int i = 0; i < _info._numChannels; ++i) {
-			GDALRasterBand* poBand;
-			poBand = _poDataset->GetRasterBand(1); // always read band 1 and fetch 3 channels
+	for (int i = 0; i < _info._numChannels; ++i) {
+		GDALRasterBand* poBand;
 
-			bandMem.push_back(nullptr);
+		// if _useForceColorOutputChannels always read band 1 and fetch 3 channels
+		poBand = _useForceColorOutputChannels ? _poDataset->GetRasterBand(1) : _poDataset->GetRasterBand(i + 1);
 
-			if (!poBand)
-				break;
+		bandMem.push_back(nullptr);
 
-			// make some mem
-			bandMem[bandMem.size() - 1] = CPLMalloc(_info._bytesPerChannel * nBufXSize * nBufYSize);
+		if (!poBand)
+			break;
 
-			GDALRasterIOExtraArg sExtraArg;
-			INIT_RASTERIO_EXTRA_ARG(sExtraArg);
-			sExtraArg.eResampleAlg = GRIORA_Cubic;
+		// make some mem
+		bandMem[bandMem.size() - 1] = CPLMalloc(_info._bytesPerChannel * nBufXSize * nBufYSize);
+
+		GDALRasterIOExtraArg sExtraArg;
+		INIT_RASTERIO_EXTRA_ARG(sExtraArg);
+		sExtraArg.eResampleAlg = GRIORA_Cubic;
 
 
-			CPLErr err = poBand->RasterIO(GF_Read, nXOff, nYOff, nXSize, nYSize,
-				bandMem[bandMem.size() - 1], nBufXSize, nBufYSize, dataType,
-				0, 0, &sExtraArg);
-		}
+		CPLErr err = poBand->RasterIO(GF_Read, nXOff, nYOff, nXSize, nYSize,
+			bandMem[bandMem.size() - 1], nBufXSize, nBufYSize, dataType,
+			0, 0, &sExtraArg);
 	}
-	else {
-		for (int i = 0; i < _info._numChannels; ++i) {
-			GDALRasterBand* poBand;
-			poBand = _poDataset->GetRasterBand(i + 1);
 
-			bandMem.push_back(nullptr);
-
-			if (!poBand)
-				break;
-
-			// make some mem
-			bandMem[bandMem.size() - 1] = CPLMalloc(_info._bytesPerChannel * nBufXSize * nBufYSize);
-
-			GDALRasterIOExtraArg sExtraArg;
-			INIT_RASTERIO_EXTRA_ARG(sExtraArg);
-			sExtraArg.eResampleAlg = GRIORA_Cubic;
-
-
-			CPLErr err = poBand->RasterIO(GF_Read, nXOff, nYOff, nXSize, nYSize,
-				bandMem[bandMem.size() - 1], nBufXSize, nBufYSize, dataType,
-				0, 0, &sExtraArg);
-		}
-	}
-	
 
 	// put the data into the passed in buffer
 	if (_info._bytesPerChannel == 2) {
@@ -616,7 +781,9 @@ bool IGDALReaderImpl::setImageNumber(int num)
 
 	getImageInfo(_filename.data(), _info);
 
+#pragma warning(suppress: 4244)
 	_info._imageWidth /= pow(2.0, num);
+#pragma warning(suppress: 4244)
 	_info._imageHeight /= pow(2.0, num);
 
 	return true;

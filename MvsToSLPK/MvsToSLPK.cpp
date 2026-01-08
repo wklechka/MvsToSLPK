@@ -2,7 +2,10 @@
 //
 #include <windows.h>
 
+#pragma warning(push)
+#pragma warning(disable: 4267)
 #include <tclap/CmdLine.h>
+#pragma warning(pop)
 
 #include "StdUtil/StdUtility.h"
 #include "StdUtil/WinUtility.h"

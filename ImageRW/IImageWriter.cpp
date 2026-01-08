@@ -733,7 +733,7 @@ bool IWriteGDALImpl::writeAsTiff(uint8_t* bits, int width, int height, const cha
 
 		uint8_t* dstPtr = dataPixel;
 		int widthSize = actualWidth * opt.numChannels * opt.bytesPerChannel;
-		for (int i = 0; i < actualHeight; ++i) {
+		for (uint32_t j = 0; j < actualHeight; ++j) {
 			memcpy(dstPtr, scrPtr, widthSize);
 			dstPtr += widthSize;
 			scrPtr += imageWidth;

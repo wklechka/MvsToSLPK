@@ -83,6 +83,7 @@ struct IImageReader
 
 	virtual void ignoreUpperBands(bool val) = 0;
 	virtual void forceColorOutput(bool val) = 0;
+	virtual void force8Bit(bool val) = 0;
 
 	virtual bool setFile(const char* filename) = 0;
 	virtual bool getImageInfo(GDALImageInfo& info) = 0;

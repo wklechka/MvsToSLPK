@@ -149,7 +149,7 @@ DWORD executeColmap(const std::wstring& executable, const std::wstring& cmdline)
 
 	DWORD bytesWritten;
 	std::string messageToSend = "\n";
-	BOOL success = WriteFile(hWrite, messageToSend.c_str(), strlen(messageToSend.c_str()), &bytesWritten, NULL);
+	BOOL success = WriteFile(hWrite, messageToSend.c_str(), DWORD(strlen(messageToSend.c_str())), &bytesWritten, NULL);
 
 
 	info.hStdOutput = hWrite;
@@ -197,7 +197,7 @@ DWORD executeColmap(const std::wstring& executable, const std::wstring& cmdline)
 	// stop pipe reading thread
 	stopExecution = true;
 	std::string messageToSend2 = "\n";
-	BOOL success2 = WriteFile(hWrite, messageToSend2.c_str(), strlen(messageToSend2.c_str()), &bytesWritten, NULL);
+	BOOL success2 = WriteFile(hWrite, messageToSend2.c_str(), DWORD(strlen(messageToSend2.c_str())), &bytesWritten, NULL);
 
 	
 	threadPipe.join();
@@ -405,7 +405,7 @@ bool resizeTexturePow2(const std::string& firstFile)
 		return false;
 	}
 
-	unsigned int textureSizeLimit = 16384;
+	int textureSizeLimit = 16384;
 
 	if (info._imageWidth <= textureSizeLimit && info._imageHeight <= textureSizeLimit) {
 		// no processing need
@@ -802,6 +802,7 @@ bool imageTo8bit(const std::string& inputImageName, const std::string& outImage)
 	IImageReader& fm = *iif;
  	fm.ignoreUpperBands(true);
 	fm.forceColorOutput(true);
+	fm.force8Bit(true);
 
 	if (!fm.setFile(inputImageName.c_str())) {
 		return false;
@@ -866,6 +867,8 @@ bool imageTo8bit(const std::string& inputImageName, const std::string& outImage)
 		uint8_t* dataPixel = new uint8_t[fm.readRectMemSize(actualWidth, actualHeight)];
 		fm.readRect(left, top, actualWidth, actualHeight, dataPixel);
 
+		// no longer needed, as we force 8 bit above
+#if 0
 		if (info._bytesPerChannel == 2) {
 			// convert...
 			int dataSize = actualWidth * actualHeight * info._numChannels;
@@ -878,6 +881,7 @@ bool imageTo8bit(const std::string& inputImageName, const std::string& outImage)
 			delete[] dataPixel;
 			dataPixel = newDataPixel;
 		}
+#endif
 
 		//memset(imageTile, 255, actualWidth * actualHeight * 3);
 
@@ -924,7 +928,7 @@ void postProgress(int progress, const char* msg)
 	
 
 	DWORD bytesWritten;
-	BOOL success = WriteFile(hPipe, messageToSend.c_str(), strlen(messageToSend.c_str()), &bytesWritten, NULL);
+	BOOL success = WriteFile(hPipe, messageToSend.c_str(), DWORD(strlen(messageToSend.c_str())), &bytesWritten, NULL);
 	
 // 	if (success)
 // 	{
