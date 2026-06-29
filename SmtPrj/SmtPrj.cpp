@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <sstream>
 
-
+#include "StdUtil/StdUtility.h"
 
 constexpr int BUFF_SIZE = 512;
 
@@ -220,6 +220,18 @@ public:
 			}
 		}
 
+		//double pixelSize = param.filmWidth / imageWidth;
+		double fx = param.focal; // should be mm
+
+		param.k[0] = param.k[0] * std::pow(fx, 1.0);
+		param.k[1] = param.k[1] * std::pow(fx, 2.0);
+		param.k[2] = param.k[2] * std::pow(fx, 4.0);
+		param.k[3] = param.k[3] * std::pow(fx, 6.0);
+
+		param.p[0] = param.p[0] * std::pow(fx, 2.0);
+		param.p[1] = param.p[1] * std::pow(fx, 2.0);
+		param.p[2] = param.p[2] * std::pow(fx, 2.0);
+
 		return true;
 	}
 
@@ -398,7 +410,7 @@ public:
 			}
 		}
 
-		fillCameraData();
+ 		fillCameraData();
 
 		return true;
 	}
@@ -645,6 +657,23 @@ protected:
 	{
 		_cameraParam.resize(_cameraList.size());
 		for (int i = 0; i < _cameraList.size(); ++i) {
+
+			if (!StdUtility::fileExists(_cameraList[i])) {
+				// try the folder of the smtxml
+				std::string dir = StdUtility::getDirectory(_projectFile);
+				std::string cameraName = StdUtility::getName(_cameraList[i], false);
+
+				// try new camera name
+				std::string newCameraName = dir + cameraName;
+				if (StdUtility::fileExists(newCameraName)) {
+					_cameraList[i] = newCameraName;
+				}
+				else {
+					// failed to find
+					continue;
+				}
+			}
+
 			fillCameraParam(_cameraParam[i], _cameraList[i]);
 		}
 	}

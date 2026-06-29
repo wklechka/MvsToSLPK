@@ -115,6 +115,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <AdditionalIncludeDirectories>..\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,6 +135,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <AdditionalIncludeDirectories>..\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,6 +163,11 @@
     <ClCompile Include="SmtPrj.cpp" />
     <ClCompile Include="SMXml.cpp" />
     <ClCompile Include="XMLCommon.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StdUtil\StdUtil.vcxproj">
+      <Project>{a9993049-a800-4f50-890a-6dacedcf932e}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
